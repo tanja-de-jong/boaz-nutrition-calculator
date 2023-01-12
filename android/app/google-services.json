@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1068862293740",
+    "project_id": "boaz--nutrition-calculator",
+    "storage_bucket": "boaz--nutrition-calculator.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1068862293740:android:416083ae5e29adeef6c7c9",
+        "android_client_info": {
+          "package_name": "com.tanjadejong.boaz_nutrition_calculator"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1068862293740-7ptiv4figvrgckrgbl9hfelj3rimu6kb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqxlBzK-vPCozmeNA9jdwdfpiDYvFiVKU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1068862293740-7ptiv4figvrgckrgbl9hfelj3rimu6kb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
