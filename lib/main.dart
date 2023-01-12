@@ -203,7 +203,7 @@ class _MyHomePageState extends State<MyHomePage> {
         margin: const EdgeInsets.all(15.0),
         padding: const EdgeInsets.all(15.0),
         decoration: BoxDecoration(border: Border.all()),
-        child: MediaQuery.of(context).size.width >= 500
+        child: MediaQuery.of(context).size.width >= 700
             ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 foodLabel,
                 const SizedBox(width: 10),
