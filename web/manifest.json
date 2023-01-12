@@ -1,6 +1,6 @@
 {
     "name": "Boaz' Voercalculator",
-    "short_name": "boaz_nutrition_calculator",
+    "short_name": "Boaz' Voercalculator",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
