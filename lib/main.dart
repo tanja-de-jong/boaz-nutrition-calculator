@@ -102,8 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
     int kcalEaten = getKcalEaten();
     var ref = await db
         .collection("days")
-        .doc(DateFormat("yyyy-MM-dd")
-        .format(DateTime.now()))
+        .doc(DateFormat("yyyy-MM-dd").format(DateTime.now()))
         .collection("meals")
         .add({
       "foodId": selectedFood?.id,
@@ -114,13 +113,8 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     setState(() {
-      mealItems.add(Meal(
-        ref.id,
-          selectedFood!.id,
-          selectedFood!.name,
-          selectedPortion!.unit,
-          quantityEaten,
-          getKcalEaten()));
+      mealItems.add(Meal(ref.id, selectedFood!.id, selectedFood!.name,
+          selectedPortion!.unit, quantityEaten, getKcalEaten()));
       kcalEatenToday += kcalEaten;
     });
   }
@@ -128,9 +122,10 @@ class _MyHomePageState extends State<MyHomePage> {
   void deleteMeal(Meal meal) {
     db
         .collection("days")
-        .doc(DateFormat("yyyy-MM-dd")
-        .format(DateTime.now()))
-        .collection("meals").doc(meal.id).delete();
+        .doc(DateFormat("yyyy-MM-dd").format(DateTime.now()))
+        .collection("meals")
+        .doc(meal.id)
+        .delete();
 
     setState(() {
       mealItems.remove(meal);
@@ -139,9 +134,110 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   int getKcalEaten() {
-    return ((selectedFood?.kcal ?? 0) / 1000 *
-        quantityEaten *
-        (selectedPortion?.grams ?? 0)).round();
+    return ((selectedFood?.kcal ?? 0) /
+            1000 *
+            quantityEaten *
+            (selectedPortion?.grams ?? 0))
+        .round();
+  }
+
+  Widget getAddMealWidget() {
+    Widget foodLabel = const SelectableText('Eten');
+    Widget foodDropdown = DropdownButton<Food>(
+        value: selectedFood,
+        items: foodItems.map((Food food) {
+          return DropdownMenuItem<Food>(value: food, child: Text(food.name));
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            selectedFood = value;
+            selectedPortion = selectedFood?.portions[0];
+          });
+        });
+    Widget quantityLabel = const SelectableText('Hoeveelheid');
+    Widget quantityNumber = SizedBox(
+        width: 30,
+        child: TextFormField(
+          initialValue: selectedPortion?.defaultAmount.toString(),
+          keyboardType: const TextInputType.numberWithOptions(
+              decimal: true, signed: false),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r"[0-9.]")),
+            TextInputFormatter.withFunction((oldValue, newValue) {
+              try {
+                final text = newValue.text;
+                if (text.isNotEmpty) double.parse(text);
+                return newValue;
+              } catch (e) {}
+              return oldValue;
+            }),
+          ],
+          onChanged: (value) {
+            setState(() {
+              if (value != "") quantityEaten = double.parse(value);
+            });
+          },
+        ));
+    Widget unitDropdown = DropdownButton<Portion>(
+        value: selectedPortion,
+        items: selectedFood?.portions.map((Portion portion) {
+          return DropdownMenuItem<Portion>(
+              value: portion, child: Text(portion.unit));
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            selectedPortion = value;
+          });
+        });
+    Widget kcalLabel = Container(
+        padding: const EdgeInsets.all(5),
+        decoration: const BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(30)),
+            color: Colors.blue),
+        child: Text(
+            "${(selectedFood?.kcal ?? 0) / 1000 * quantityEaten * (selectedPortion?.grams ?? 0)} kcal"));
+    Widget addButton =
+        IconButton(onPressed: addMeal, icon: const Icon(Icons.add));
+
+    return Center(child: Container(
+        margin: const EdgeInsets.all(15.0),
+        padding: const EdgeInsets.all(15.0),
+        decoration: BoxDecoration(border: Border.all()),
+        child: MediaQuery.of(context).size.width >= 500
+            ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                foodLabel,
+                const SizedBox(width: 10),
+                foodDropdown,
+                const SizedBox(width: 10),
+                quantityLabel,
+                const SizedBox(width: 10),
+                quantityNumber,
+                const SizedBox(width: 10),
+                unitDropdown,
+                const SizedBox(width: 10),
+                kcalLabel,
+                const SizedBox(width: 10),
+                addButton
+              ])
+            : Column(
+                children: [
+                  foodLabel,
+                  const SizedBox(height: 10),
+                  foodDropdown,
+                  const SizedBox(height: 10),
+                  quantityLabel,
+                  const SizedBox(height: 10),
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    quantityNumber,
+                    const SizedBox(width: 10),
+                    unitDropdown,
+                  ]),
+                  const SizedBox(height: 10),
+                  kcalLabel,
+                  const SizedBox(height: 10),
+                  addButton
+                ],
+              )));
   }
 
   @override
@@ -166,7 +262,8 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         body: loading
             ? const Center(child: CircularProgressIndicator())
-            : Column(
+            : SingleChildScrollView(
+                child: Column(
                 // mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
@@ -177,75 +274,23 @@ class _MyHomePageState extends State<MyHomePage> {
                       percent:
                           max((kcalAllowed - kcalEatenToday) / kcalAllowed, 0)),
                   const SizedBox(height: 20),
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const SelectableText('Eten'),
-                    const SizedBox(width: 10),
-                    DropdownButton<Food>(
-                        value: selectedFood,
-                        items: foodItems.map((Food food) {
-                          return DropdownMenuItem<Food>(
-                              value: food, child: Text(food.name));
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedFood = value;
-                            selectedPortion = selectedFood?.portions[0];
-                          });
-                        }),
-                    const SizedBox(width: 10),
-                    const SelectableText('Hoeveelheid'),
-                    const SizedBox(width: 10),
-                    SizedBox(
-                        width: 100,
-                        child: TextFormField(
-                          initialValue:
-                              selectedPortion?.defaultAmount.toString(),
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true, signed: false),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r"[0-9.]")),
-                            TextInputFormatter.withFunction(
-                                (oldValue, newValue) {
-                              try {
-                                final text = newValue.text;
-                                if (text.isNotEmpty) double.parse(text);
-                                return newValue;
-                              } catch (e) {}
-                              return oldValue;
-                            }),
-                          ],
-                          onChanged: (value) {
-                            setState(() {
-                              if (value != "") quantityEaten = double.parse(value);
-                            });
-                          },
-                        )),
-                    const SizedBox(width: 10),
-                    DropdownButton<Portion>(
-                        value: selectedPortion,
-                        items: selectedFood?.portions.map((Portion portion) {
-                          return DropdownMenuItem<Portion>(
-                              value: portion, child: Text(portion.unit));
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedPortion = value;
-                          });
-                        }),
-                    const SizedBox(width: 10),
-                    Container(padding: const EdgeInsets.all(5), decoration: const BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(30)), color: Colors.blue), child:  Text("${(selectedFood?.kcal ?? 0) / 1000 *
-                        quantityEaten *
-                        (selectedPortion?.grams ?? 0)} kcal")),
-                    const SizedBox(width: 10),
-                    IconButton(onPressed: addMeal, icon: const Icon(Icons.add),)
-                  ]),
+                  getAddMealWidget(),
                   const SizedBox(height: 20),
-                  ...mealItems.map((Meal meal) =>
-                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text("${meal.quantity} ${meal.unit} ${meal.foodName} (${meal.kcal} kcal)"), IconButton(iconSize: 15, splashRadius: 15, onPressed: () { deleteDialog(meal); }, icon: const Icon(Icons.delete))])
-                  )
+                  ...mealItems.map((Meal meal) => Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                                "${meal.quantity} ${meal.unit} ${meal.foodName} (${meal.kcal} kcal)"),
+                            IconButton(
+                                iconSize: 15,
+                                splashRadius: 15,
+                                onPressed: () {
+                                  deleteDialog(meal);
+                                },
+                                icon: const Icon(Icons.delete))
+                          ]))
                 ],
-              ),
+              )),
         floatingActionButton: FloatingActionButton(
           onPressed: _showAddMealDialog,
           tooltip: 'Increment',
@@ -361,7 +406,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 });
                                 setState(() {
                                   mealItems.add(Meal(
-                                    ref.id,
+                                      ref.id,
                                       selectedFood!.id,
                                       selectedFood!.name,
                                       selectedPortion!.unit,
@@ -392,18 +437,18 @@ class _MyHomePageState extends State<MyHomePage> {
                   const SizedBox(height: 20),
                   Center(
                       child: Wrap(spacing: 10, children: [
-                        OutlinedButton(
-                            onPressed: () {
-                              deleteMeal(meal);
-                              Navigator.pop(context);
-                            },
-                            child: Text('Ja')),
-                        ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: Text('Nee')),
-                      ]))
+                    OutlinedButton(
+                        onPressed: () {
+                          deleteMeal(meal);
+                          Navigator.pop(context);
+                        },
+                        child: Text('Ja')),
+                    ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text('Nee')),
+                  ]))
                 ])
               ]);
         });
@@ -457,7 +502,8 @@ class Meal {
   double quantity;
   int kcal;
 
-  Meal(this.id, this.foodId, this.foodName, this.unit, this.quantity, this.kcal);
+  Meal(
+      this.id, this.foodId, this.foodName, this.unit, this.quantity, this.kcal);
 
   static Meal create(String id, Map<String, dynamic> data) {
     return Meal(id, data["foodId"], data["foodName"], data["unit"],
