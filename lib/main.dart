@@ -1,16 +1,21 @@
 import 'dart:math';
 
+import 'package:boaz_nutrition_calculator/store.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart'; // generated via `flutterfire` CLI
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+
+import 'food_settings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  initializeDateFormatting();
   runApp(const MyApp());
 }
 
@@ -59,93 +64,69 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool loading = true;
-  FirebaseFirestore db = FirebaseFirestore.instance;
-  List<Food> foodItems = [];
-  List<Meal> mealItems = [];
-  int kcalEatenToday = 0;
-  int kcalAllowed = 1000;
   Food? selectedFood;
   Portion? selectedPortion;
   double quantityEaten = 0;
+  DateTime selectedDate = DateTime.now();
+  List<Meal> mealItems = [];
+  int kcalEatenToday = 0;
 
   void loadDataFromDatabase() async {
-    var foodDocs = (await db.collection("food").get()).docs;
-    var mealDocs = (await db
-            .collection("days")
-            .doc(DateFormat("yyyy-MM-dd").format(DateTime.now()))
-            .collection("meals")
-            .get())
-        .docs;
+    await Store.loadFood();
+    await Store.loadMealsForDate(selectedDate);
 
     setState(() {
-      foodItems = [];
-      for (var doc in foodDocs) {
-        foodItems.add(Food.create(doc.id, doc.data()));
-      }
-
-      mealItems = [];
-
-      for (var doc in mealDocs) {
-        Meal meal = Meal.create(doc.id, doc.data());
-        mealItems.add(meal);
-        kcalEatenToday += meal.kcal;
-      }
-
-      selectedFood = foodItems[0];
-      selectedPortion = selectedFood?.portions[0];
+      selectedFood = Store.foodItems[0];
+      selectedPortion =
+          selectedFood?.portions.firstWhere((Portion p) => p.isDefault);
       quantityEaten = selectedPortion!.defaultAmount;
+      mealItems = Store.mealItems;
+      kcalEatenToday = Store.kcalEatenToday;
       loading = false;
     });
   }
 
-  Future<void> addMeal() async {
-    int kcalEaten = getKcalEaten();
-    var ref = await db
-        .collection("days")
-        .doc(DateFormat("yyyy-MM-dd").format(DateTime.now()))
-        .collection("meals")
-        .add({
-      "foodId": selectedFood?.id,
-      "foodName": selectedFood?.name,
-      "unit": selectedPortion?.unit,
-      "quantity": quantityEaten,
-      "kcal": kcalEaten
-    });
+  String getDay() {
+    int day = selectedDate.day;
+    int month = selectedDate.month;
+    int year = selectedDate.year;
 
-    setState(() {
-      mealItems.add(Meal(ref.id, selectedFood!.id, selectedFood!.name,
-          selectedPortion!.unit, quantityEaten, getKcalEaten()));
-      kcalEatenToday += kcalEaten;
-    });
-  }
+    final now = DateTime.now();
+    if (now.day == day && now.month == month && now.year == year)
+      return "Vandaag";
 
-  void deleteMeal(Meal meal) {
-    db
-        .collection("days")
-        .doc(DateFormat("yyyy-MM-dd").format(DateTime.now()))
-        .collection("meals")
-        .doc(meal.id)
-        .delete();
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    if (yesterday.day == day &&
+        yesterday.month == month &&
+        yesterday.year == year) return "Gisteren";
 
-    setState(() {
-      mealItems.remove(meal);
-      kcalEatenToday -= meal.kcal;
-    });
-  }
-
-  int getKcalEaten() {
-    return ((selectedFood?.kcal ?? 0) /
-            1000 *
-            quantityEaten *
-            (selectedPortion?.grams ?? 0))
-        .round();
+    return DateFormat("EEE dd-MM-yyyy", "nl").format(selectedDate);
   }
 
   Widget getAddMealWidget() {
+    Widget quickAddButtons = Wrap(
+        spacing: 5,
+        runSpacing: 5,
+        children: Store.quickAddItems
+            .map((i) => Tooltip(
+                message:
+                    "${i.portion.defaultAmount} ${i.portion.unit} ${i.food.name}",
+                child: SizedBox(
+                    width: 200,
+                    child: ElevatedButton.icon(
+                        onPressed: () {
+                          addMeal(i.food, i.portion, i.portion.defaultAmount);
+                        },
+                        icon: const Icon(Icons.add),
+                        label: Text(
+                          "${i.portion.defaultAmount} ${i.portion.unit} ${i.food.name}",
+                          overflow: TextOverflow.ellipsis,
+                        )))))
+            .toList());
     Widget foodLabel = const SelectableText('Eten');
     Widget foodDropdown = DropdownButton<Food>(
         value: selectedFood,
-        items: foodItems.map((Food food) {
+        items: Store.foodItems.map((Food food) {
           return DropdownMenuItem<Food>(value: food, child: Text(food.name));
         }).toList(),
         onChanged: (value) {
@@ -196,48 +177,81 @@ class _MyHomePageState extends State<MyHomePage> {
             color: Colors.blue),
         child: Text(
             "${(selectedFood?.kcal ?? 0) / 1000 * quantityEaten * (selectedPortion?.grams ?? 0)} kcal"));
-    Widget addButton =
-        IconButton(onPressed: addMeal, icon: const Icon(Icons.add));
+    Widget addButton = IconButton(
+        onPressed: selectedFood != null && selectedPortion != null
+            ? () => addMeal(selectedFood!, selectedPortion!, quantityEaten)
+            : null,
+        icon: const Icon(Icons.add));
 
-    return Center(child: Container(
-        margin: const EdgeInsets.all(15.0),
-        padding: const EdgeInsets.all(15.0),
-        decoration: BoxDecoration(border: Border.all()),
-        child: MediaQuery.of(context).size.width >= 700
-            ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                foodLabel,
-                const SizedBox(width: 10),
-                foodDropdown,
-                const SizedBox(width: 10),
-                quantityLabel,
-                const SizedBox(width: 10),
-                quantityNumber,
-                const SizedBox(width: 10),
-                unitDropdown,
-                const SizedBox(width: 10),
-                kcalLabel,
-                const SizedBox(width: 10),
-                addButton
-              ])
-            : Column(
-                children: [
-                  foodLabel,
-                  const SizedBox(height: 10),
-                  foodDropdown,
-                  const SizedBox(height: 10),
-                  quantityLabel,
-                  const SizedBox(height: 10),
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    quantityNumber,
-                    const SizedBox(width: 10),
-                    unitDropdown,
-                  ]),
-                  const SizedBox(height: 10),
-                  kcalLabel,
-                  const SizedBox(height: 10),
-                  addButton
-                ],
-              )));
+    return Center(
+        child: Container(
+            margin: const EdgeInsets.all(15.0),
+            padding: const EdgeInsets.all(15.0),
+            decoration: BoxDecoration(border: Border.all()),
+            child: Column(children: [
+              quickAddButtons,
+              MediaQuery.of(context).size.width >= 700
+                  ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      foodLabel,
+                      const SizedBox(width: 10),
+                      foodDropdown,
+                      const SizedBox(width: 10),
+                      quantityLabel,
+                      const SizedBox(width: 10),
+                      quantityNumber,
+                      const SizedBox(width: 10),
+                      unitDropdown,
+                      const SizedBox(width: 10),
+                      kcalLabel,
+                      const SizedBox(width: 10),
+                      addButton
+                    ])
+                  : Column(
+                      children: [
+                        if (Store.quickAddItems.isNotEmpty)
+                          const SizedBox(height: 10),
+                        foodLabel,
+                        const SizedBox(height: 10),
+                        foodDropdown,
+                        const SizedBox(height: 10),
+                        quantityLabel,
+                        const SizedBox(height: 10),
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              quantityNumber,
+                              const SizedBox(width: 10),
+                              unitDropdown,
+                            ]),
+                        const SizedBox(height: 10),
+                        kcalLabel,
+                        const SizedBox(height: 10),
+                        addButton
+                      ],
+                    )
+            ])));
+  }
+
+  Future<void> addMeal(Food food, Portion portion, quantityEaten) async {
+    await Store.addMeal(food, portion, quantityEaten, selectedDate);
+    setState(() {
+      mealItems = Store.mealItems;
+    });
+  }
+
+  Future<void> removeMeal(Meal meal) async {
+    await Store.removeMeal(meal);
+    setState(() {
+      mealItems = Store.mealItems;
+    });
+  }
+
+  void chooseDate(DateTime date) async {
+    selectedDate = date;
+    await Store.loadMealsForDate(date);
+    setState(() {
+      mealItems = Store.mealItems;
+    });
   }
 
   @override
@@ -255,171 +269,112 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-        appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text(widget.title),
-        ),
-        body: loading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Column(
-                // mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  const SizedBox(height: 20),
-                  CircularPercentIndicator(
-                      radius: 60.0,
-                      center: Text("${1000 - kcalEatenToday} kcal"),
-                      percent:
-                          max((kcalAllowed - kcalEatenToday) / kcalAllowed, 0)),
-                  const SizedBox(height: 20),
-                  getAddMealWidget(),
-                  const SizedBox(height: 20),
-                  ...mealItems.map((Meal meal) => Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                                "${meal.quantity} ${meal.unit} ${meal.foodName} (${meal.kcal} kcal)"),
-                            IconButton(
-                                iconSize: 15,
-                                splashRadius: 15,
-                                onPressed: () {
-                                  deleteDialog(meal);
-                                },
-                                icon: const Icon(Icons.delete))
-                          ]))
-                ],
-              )),
-        floatingActionButton: FloatingActionButton(
-          onPressed: _showAddMealDialog,
-          tooltip: 'Increment',
-          child: const Icon(Icons.add),
-        ));
-  }
-
-  _showAddMealDialog() {
-    Food? selectedFood = foodItems[0];
-    Portion? selectedPortion = foodItems[0].portions[0];
-    double quantityEaten = 0;
-    showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return StatefulBuilder(builder: (context, setState) {
-            return SimpleDialog(
-                title: const Text("Voeg maaltijd toe"),
-                children: [
-                  Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                            padding: EdgeInsets.only(left: 25, right: 25),
-                            child: Column(children: [
-                              // Row(
-                              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              //   children: [
-                              const SelectableText('Eten'),
-                              DropdownButton<Food>(
-                                  value: selectedFood,
-                                  items: foodItems.map((Food food) {
-                                    return DropdownMenuItem<Food>(
-                                        value: food, child: Text(food.name));
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      selectedFood = value;
-                                      selectedPortion =
-                                          selectedFood?.portions[0];
-                                    });
-                                    print(selectedFood?.portions[0].unit ??
-                                        "No portions");
-                                  }),
-                              //   ],
-                              // ),
-                              // Row(
-                              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              //   children: [
-                              const SelectableText('Hoeveelheid'),
-                              TextField(
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true, signed: false),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r"[0-9.]")),
-                                  TextInputFormatter.withFunction(
-                                      (oldValue, newValue) {
-                                    try {
-                                      final text = newValue.text;
-                                      if (text.isNotEmpty) double.parse(text);
-                                      return newValue;
-                                    } catch (e) {}
-                                    return oldValue;
-                                  }),
-                                ],
-                                onChanged: (value) {
-                                  quantityEaten = double.parse(value);
-                                },
-                              ),
-                              DropdownButton<Portion>(
-                                  value: selectedPortion,
-                                  items: selectedFood?.portions
-                                      .map((Portion portion) {
-                                    return DropdownMenuItem<Portion>(
-                                        value: portion,
-                                        child: Text(portion.unit));
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      selectedPortion = value;
-                                    });
-                                  }),
-                              //   ],
-                              // )
-                            ])),
-                        const SizedBox(height: 20),
-                        Center(
-                            child: Wrap(spacing: 10, children: [
-                          OutlinedButton(
+      appBar: AppBar(
+        // Here we take the value from the MyHomePage object that was created by
+        // the App.build method, and use it to set our appbar title.
+        title: Text(widget.title),
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+              // mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      SizedBox(
+                          width: MediaQuery.of(context).size.width >= 500
+                              ? 100
+                              : 50,
+                          child: TextButton.icon(
                               onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              child: Text('Annuleren')),
-                          ElevatedButton(
-                              onPressed: () async {
-                                double gramsEaten = quantityEaten *
-                                    (selectedPortion?.grams ?? 0);
-                                int kcalEaten = ((selectedFood?.kcal ?? 0) /
-                                    1000 *
-                                    gramsEaten) as int;
-                                var ref = await db
-                                    .collection("days")
-                                    .doc(DateFormat("yyyy-MM-dd")
-                                        .format(DateTime.now()))
-                                    .collection("meals")
-                                    .add({
-                                  "foodId": selectedFood?.id,
-                                  "foodName": selectedFood?.name,
-                                  "unit": selectedPortion?.unit,
-                                  "quantity": quantityEaten,
-                                  "kcal": kcalEaten
-                                });
                                 setState(() {
-                                  mealItems.add(Meal(
-                                      ref.id,
-                                      selectedFood!.id,
-                                      selectedFood!.name,
-                                      selectedPortion!.unit,
-                                      quantityEaten,
-                                      kcalEaten));
+                                  chooseDate(selectedDate
+                                      .subtract(const Duration(days: 1)));
                                 });
                               },
-                              child: Text('Toevoegen')),
-                        ]))
-                      ])
-                ]);
-          });
-        });
+                              icon: const Icon(Icons.keyboard_arrow_left),
+                              label: Text(
+                                  MediaQuery.of(context).size.width >= 500
+                                      ? 'Vorige'
+                                      : ''))),
+                      Text(getDay()),
+                      SizedBox(
+                          width: MediaQuery.of(context).size.width >= 500
+                              ? 100
+                              : 50,
+                          child: getDay() != "Vandaag"
+                              ? TextButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      chooseDate(selectedDate
+                                          .add(const Duration(days: 1)));
+                                    });
+                                  },
+                                  label: const Icon(Icons.keyboard_arrow_right),
+                                  icon: Text(
+                                    MediaQuery.of(context).size.width >= 500
+                                        ? 'Volgende'
+                                        : '',
+                                  ))
+                              : Container())
+                    ]),
+                const SizedBox(height: 20),
+                CircularPercentIndicator(
+                    radius: 60.0,
+                    center: Text("${1000 - Store.kcalEatenToday} kcal"),
+                    percent: max(
+                        (Store.kcalAllowed - Store.kcalEatenToday) /
+                            Store.kcalAllowed,
+                        0)),
+                const SizedBox(height: 20),
+                getAddMealWidget(),
+                const SizedBox(height: 20),
+                ...Store.mealItems.map((Meal meal) => Container(
+                    margin: EdgeInsets.only(left: 15, right: 15),
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                              width: MediaQuery.of(context).size.width - 120,
+                              child: Text(
+                                "${meal.quantity} ${meal.unit} ${meal.foodName} (${meal.kcal} kcal)",
+                                overflow: TextOverflow.ellipsis,
+                              )),
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                IconButton(
+                                    padding: const EdgeInsets.all(3),
+                                    constraints: const BoxConstraints(),
+                                      iconSize: 17,
+                                      splashRadius: 13,
+                                      onPressed: () {
+                                        infoDialog(meal);
+                                      },
+                                      icon: const Icon(Icons.info)),
+                                IconButton(
+                                    padding: const EdgeInsets.all(3),
+                                    constraints: const BoxConstraints(),
+                                    iconSize: 18,
+                                    splashRadius: 13,
+                                    onPressed: () {
+                                      deleteDialog(meal);
+                                    },
+                                    icon: const Icon(Icons.delete)),
+                              ])
+                        ])))
+              ],
+            )),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () => Navigator.of(context).pushReplacement(
+      //     MaterialPageRoute(builder: (context) => const FoodSettings()),
+      //   ),
+      //   child: const Icon(Icons.add),
+      // )
+    );
   }
 
   deleteDialog(Meal meal) {
@@ -427,86 +382,68 @@ class _MyHomePageState extends State<MyHomePage> {
         context: context,
         builder: (BuildContext context) {
           return SimpleDialog(
-              title: SelectableText('Training verwijderen'),
+              title: const SelectableText('Maaltijd verwijderen'),
               children: [
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Container(
-                      padding: EdgeInsets.only(left: 25, right: 25),
+                      padding: const EdgeInsets.only(left: 25, right: 25),
                       child: const SelectableText(
-                          'Weet je zeker dat je dit wil verwijderen?')),
+                          'Weet je zeker dat je deze maaltijd wil verwijderen?')),
                   const SizedBox(height: 20),
                   Center(
                       child: Wrap(spacing: 10, children: [
                     OutlinedButton(
                         onPressed: () {
-                          deleteMeal(meal);
+                          removeMeal(meal);
                           Navigator.pop(context);
                         },
-                        child: Text('Ja')),
+                        child: const Text('Ja')),
                     ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
                         },
-                        child: Text('Nee')),
+                        child: const Text('Nee')),
                   ]))
                 ])
               ]);
         });
   }
-}
 
-class Food {
-  String id;
-  String name;
-  int kcal;
-  List<Portion> portions;
+  infoDialog(Meal meal) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return SimpleDialog(
+              title: const SelectableText('Details'),
+              children: [
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                      padding: const EdgeInsets.only(left: 25, right: 25),
+                      child: SelectableText(
+                          'Eten: ${meal.foodName}')),
+                  const SizedBox(height: 10),
+                  Container(
+                      padding: const EdgeInsets.only(left: 25, right: 25),
+                      child: SelectableText(
+                          'Hoeveelheid: ${meal.quantity} ${meal.unit}')),
+                  const SizedBox(height: 10),
+                  Container(
+                      padding: const EdgeInsets.only(left: 25, right: 25),
+                      child: SelectableText(meal.added == null ? "Toegevoegd om: -" :
+                          'Toegevoegd om: ${DateFormat("hh:mm").format(meal.added!)} uur')),
+                  const SizedBox(height: 20),
 
-  Food(this.id, this.name, this.kcal, this.portions) {
-    id = id;
-    name = name;
-    kcal = kcal;
-    portions = portions;
-    portions.add(Portion("gram", 1, 0, false));
+                  Center(
+                      child: Wrap(spacing: 10, children: [
+                        ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Sluiten')),
+                      ]))
+                ])
+              ]);
+        });
   }
 
-  static Food create(String id, Map<String, dynamic> data) {
-    List<Portion> portionsList = [];
-    if (data.containsKey("portions")) {
-      for (var p in data["portions"]) {
-        portionsList.add(Portion.create(p));
-      }
-    }
-    return Food(id, data["name"] ?? "", data["kcal"] ?? 0, portionsList);
-  }
-}
-
-class Portion {
-  String unit;
-  int grams;
-  double defaultAmount;
-  bool isDefault;
-
-  Portion(this.unit, this.grams, this.defaultAmount, this.isDefault);
-
-  static Portion create(Map<String, dynamic> data) {
-    return Portion(data["unit"] ?? "", data["grams"] ?? 0,
-        data["defaultAmount"] ?? 0, data["isDefault"] ?? false);
-  }
-}
-
-class Meal {
-  String id;
-  String foodId;
-  String foodName;
-  String unit;
-  double quantity;
-  int kcal;
-
-  Meal(
-      this.id, this.foodId, this.foodName, this.unit, this.quantity, this.kcal);
-
-  static Meal create(String id, Map<String, dynamic> data) {
-    return Meal(id, data["foodId"], data["foodName"], data["unit"],
-        data["quantity"], data["kcal"]);
-  }
 }
