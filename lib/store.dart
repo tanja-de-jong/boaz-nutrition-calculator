@@ -24,6 +24,7 @@ class Store {
   static Future<void> loadFood() async {
     var foodDocs = (await db.collection("food").get()).docs;
     foodItems = [];
+    quickAddItems = [];
     for (var doc in foodDocs) {
       Food food = Food.create(doc.id, doc.data());
       foodItems.add(food);
