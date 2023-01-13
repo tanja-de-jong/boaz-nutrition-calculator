@@ -445,7 +445,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       padding: const EdgeInsets.only(left: 25, right: 25),
                       child: SelectableText(meal.added == null
                           ? "Toegevoegd om: -"
-                          : 'Toegevoegd om: ${DateFormat("hh:mm").format(meal.added!)} uur')),
+                          : 'Toegevoegd om: ${DateFormat("HH:mm").format(meal.added!)} uur')),
                   const SizedBox(height: 20),
                   Center(
                       child: Wrap(spacing: 10, children: [
