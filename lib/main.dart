@@ -4,6 +4,7 @@ import 'package:boaz_nutrition_calculator/store.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart'; // generated via `flutterfire` CLI
@@ -16,7 +17,11 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   initializeDateFormatting();
-  runApp(const MyApp());
+  runApp(GetMaterialApp(
+      home: const MyApp(),
+      title: "Boaz' Voercalculator",
+      theme: ThemeData(
+          inputDecorationTheme: const InputDecorationTheme(isDense: true))));
 }
 
 class MyApp extends StatelessWidget {
@@ -72,11 +77,10 @@ class _MyHomePageState extends State<MyHomePage> {
   int kcalEatenToday = 0;
 
   void loadDataFromDatabase() async {
-    await Store.loadFood();
-    await Store.loadMealsForDate(selectedDate);
+    await Store.loadData();
 
     setState(() {
-      selectedFood = Store.foodItems[0];
+      selectedFood = Store.activeFoodItems[0];
       selectedPortion =
           selectedFood?.portions.firstWhere((Portion p) => p.isDefault);
       quantityEaten = selectedPortion!.defaultAmount;
@@ -126,7 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget foodLabel = const SelectableText('Eten');
     Widget foodDropdown = DropdownButton<Food>(
         value: selectedFood,
-        items: Store.foodItems.map((Food food) {
+        items: Store.activeFoodItems.map((Food food) {
           return DropdownMenuItem<Food>(value: food, child: Text(food.name));
         }).toList(),
         onChanged: (value) {
@@ -139,6 +143,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget quantityNumber = SizedBox(
         width: 30,
         child: TextFormField(
+          decoration: InputDecoration(isDense: true),
           initialValue: selectedPortion?.defaultAmount.toString(),
           keyboardType: const TextInputType.numberWithOptions(
               decimal: true, signed: false),
@@ -171,7 +176,7 @@ class _MyHomePageState extends State<MyHomePage> {
           });
         });
     Widget kcalLabel = Container(
-        padding: const EdgeInsets.all(5),
+        padding: const EdgeInsets.only(top: 5, bottom: 5, left: 10, right: 10),
         decoration: const BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(30)),
             color: Colors.blue),
@@ -269,112 +274,122 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-              // mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      SizedBox(
-                          width: MediaQuery.of(context).size.width >= 500
-                              ? 100
-                              : 50,
-                          child: TextButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  chooseDate(selectedDate
-                                      .subtract(const Duration(days: 1)));
-                                });
-                              },
-                              icon: const Icon(Icons.keyboard_arrow_left),
-                              label: Text(
-                                  MediaQuery.of(context).size.width >= 500
-                                      ? 'Vorige'
-                                      : ''))),
-                      Text(getDay()),
-                      SizedBox(
-                          width: MediaQuery.of(context).size.width >= 500
-                              ? 100
-                              : 50,
-                          child: getDay() != "Vandaag"
-                              ? TextButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      chooseDate(selectedDate
-                                          .add(const Duration(days: 1)));
-                                    });
-                                  },
-                                  label: const Icon(Icons.keyboard_arrow_right),
-                                  icon: Text(
+        appBar: AppBar(
+            // Here we take the value from the MyHomePage object that was created by
+            // the App.build method, and use it to set our appbar title.
+            title: Text(widget.title),
+            actions: <Widget>[
+              Padding(
+                  padding: EdgeInsets.only(right: 20.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                            builder: (context) => const FoodSettings()),
+                      );
+                    },
+                    child: Icon(
+                      Icons.settings,
+                      size: 26.0,
+                    ),
+                  )),
+            ]),
+        body: loading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: Column(
+                // mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        SizedBox(
+                            width: MediaQuery.of(context).size.width >= 500
+                                ? 100
+                                : 50,
+                            child: TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    chooseDate(selectedDate
+                                        .subtract(const Duration(days: 1)));
+                                  });
+                                },
+                                icon: const Icon(Icons.keyboard_arrow_left),
+                                label: Text(
                                     MediaQuery.of(context).size.width >= 500
-                                        ? 'Volgende'
-                                        : '',
-                                  ))
-                              : Container())
-                    ]),
-                const SizedBox(height: 20),
-                CircularPercentIndicator(
-                    radius: 60.0,
-                    center: Text("${1000 - Store.kcalEatenToday} kcal"),
-                    percent: max(
-                        (Store.kcalAllowed - Store.kcalEatenToday) /
-                            Store.kcalAllowed,
-                        0)),
-                const SizedBox(height: 20),
-                getAddMealWidget(),
-                const SizedBox(height: 20),
-                ...Store.mealItems.map((Meal meal) => Container(
-                    margin: EdgeInsets.only(left: 15, right: 15),
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                              width: MediaQuery.of(context).size.width - 120,
-                              child: Text(
-                                "${meal.quantity} ${meal.unit} ${meal.foodName} (${meal.kcal} kcal)",
-                                overflow: TextOverflow.ellipsis,
-                              )),
-                          Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                IconButton(
-                                    padding: const EdgeInsets.all(3),
-                                    constraints: const BoxConstraints(),
+                                        ? 'Vorige'
+                                        : ''))),
+                        Text(getDay()),
+                        SizedBox(
+                            width: MediaQuery.of(context).size.width >= 500
+                                ? 100
+                                : 50,
+                            child: getDay() != "Vandaag"
+                                ? TextButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        chooseDate(selectedDate
+                                            .add(const Duration(days: 1)));
+                                      });
+                                    },
+                                    label:
+                                        const Icon(Icons.keyboard_arrow_right),
+                                    icon: Text(
+                                      MediaQuery.of(context).size.width >= 500
+                                          ? 'Volgende'
+                                          : '',
+                                    ))
+                                : Container())
+                      ]),
+                  const SizedBox(height: 20),
+                  CircularPercentIndicator(
+                      radius: 60.0,
+                      center: Text("${1000 - Store.kcalEatenToday} kcal"),
+                      percent: max(
+                          (Store.kcalAllowed - Store.kcalEatenToday) /
+                              Store.kcalAllowed,
+                          0)),
+                  const SizedBox(height: 20),
+                  getAddMealWidget(),
+                  const SizedBox(height: 20),
+                  ...Store.mealItems.map((Meal meal) => Container(
+                      margin: const EdgeInsets.only(left: 15, right: 15),
+                      child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                                width: MediaQuery.of(context).size.width - 120,
+                                child: Text(
+                                  "${meal.quantity} ${meal.unit} ${meal.foodName} (${meal.kcal} kcal)",
+                                  overflow: TextOverflow.ellipsis,
+                                )),
+                            Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                      padding: const EdgeInsets.all(3),
+                                      constraints: const BoxConstraints(),
                                       iconSize: 17,
                                       splashRadius: 13,
                                       onPressed: () {
                                         infoDialog(meal);
                                       },
                                       icon: const Icon(Icons.info)),
-                                IconButton(
-                                    padding: const EdgeInsets.all(3),
-                                    constraints: const BoxConstraints(),
-                                    iconSize: 18,
-                                    splashRadius: 13,
-                                    onPressed: () {
-                                      deleteDialog(meal);
-                                    },
-                                    icon: const Icon(Icons.delete)),
-                              ])
-                        ])))
-              ],
-            )),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: () => Navigator.of(context).pushReplacement(
-      //     MaterialPageRoute(builder: (context) => const FoodSettings()),
-      //   ),
-      //   child: const Icon(Icons.add),
-      // )
-    );
+                                  IconButton(
+                                      padding: const EdgeInsets.all(3),
+                                      constraints: const BoxConstraints(),
+                                      iconSize: 18,
+                                      splashRadius: 13,
+                                      onPressed: () {
+                                        deleteDialog(meal);
+                                      },
+                                      icon: const Icon(Icons.delete)),
+                                ])
+                          ]))),
+                  const SizedBox(height: 20)
+                ],
+              )));
   }
 
   deleteDialog(Meal meal) {
@@ -419,8 +434,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Container(
                       padding: const EdgeInsets.only(left: 25, right: 25),
-                      child: SelectableText(
-                          'Eten: ${meal.foodName}')),
+                      child: SelectableText('Eten: ${meal.foodName}')),
                   const SizedBox(height: 10),
                   Container(
                       padding: const EdgeInsets.only(left: 25, right: 25),
@@ -429,21 +443,20 @@ class _MyHomePageState extends State<MyHomePage> {
                   const SizedBox(height: 10),
                   Container(
                       padding: const EdgeInsets.only(left: 25, right: 25),
-                      child: SelectableText(meal.added == null ? "Toegevoegd om: -" :
-                          'Toegevoegd om: ${DateFormat("hh:mm").format(meal.added!)} uur')),
+                      child: SelectableText(meal.added == null
+                          ? "Toegevoegd om: -"
+                          : 'Toegevoegd om: ${DateFormat("hh:mm").format(meal.added!)} uur')),
                   const SizedBox(height: 20),
-
                   Center(
                       child: Wrap(spacing: 10, children: [
-                        ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Sluiten')),
-                      ]))
+                    ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Sluiten')),
+                  ]))
                 ])
               ]);
         });
   }
-
 }

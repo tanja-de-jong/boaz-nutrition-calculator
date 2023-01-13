@@ -2,13 +2,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class Store {
-
   static FirebaseFirestore db = FirebaseFirestore.instance;
   static List<Food> foodItems = [];
+  static List<Food> activeFoodItems = [];
   static List<Meal> mealItems = [];
   static List<QuickAdd> quickAddItems = [];
   static int kcalAllowed = 1000;
   static int kcalEatenToday = 0;
+
+  static Future<void> loadData() async {
+    await loadSettings();
+    await loadFood();
+    await loadMealsForDate(DateTime.now());
+  }
+
+  static Future<void> loadSettings() async {
+    DocumentSnapshot<Map<String, dynamic>> doc = await db.collection("settings").doc("settings").get();
+    if (doc.data() != null && doc.data()!.containsKey("kcalAllowed")) kcalAllowed = doc.data()!["kcalAllowed"];
+  }
 
   static Future<void> loadFood() async {
     var foodDocs = (await db.collection("food").get()).docs;
@@ -16,8 +27,9 @@ class Store {
     for (var doc in foodDocs) {
       Food food = Food.create(doc.id, doc.data());
       foodItems.add(food);
+      if (!food.archived) activeFoodItems.add(food);
       for (Portion p in food.portions) {
-        if (p.quickAdd) {
+        if (!food.archived && p.quickAdd) {
           quickAddItems.add(QuickAdd(food, p));
         }
       }
@@ -26,10 +38,10 @@ class Store {
 
   static Future<void> loadMealsForDate(DateTime date) async {
     var mealDocs = (await db
-        .collection("days")
-        .doc(DateFormat("yyyy-MM-dd").format(date))
-        .collection("meals")
-        .get())
+            .collection("days")
+            .doc(DateFormat("yyyy-MM-dd").format(date))
+            .collection("meals")
+            .get())
         .docs;
 
     mealItems = [];
@@ -42,7 +54,52 @@ class Store {
     }
   }
 
-  static Future<void> addMeal(Food food, Portion portion, double quantityEaten, DateTime date) async {
+  static Future<void> addFood(
+      String? id, String name, int kcal, List<Portion> portions) async {
+    if (id != null) {
+      await db.collection("food").doc(id).set({
+        "name": name,
+        "kcal": kcal,
+        "portions": portions.map((p) => {
+              "unit": p.unit,
+              "grams": p.grams,
+              "defaultAmount": p.defaultAmount,
+              "isDefault": p.isDefault,
+              "quickAdd": p.quickAdd
+            })
+      });
+      for (Food food in foodItems) {
+        if (food.id == id) food = Food(id, name, kcal, portions);
+      }
+    } else {
+      DocumentReference ref = await db.collection("food").add({
+        "name": name,
+        "kcal": kcal,
+        "portions": portions.map((p) => {
+              "unit": p.unit,
+              "grams": p.grams,
+              "defaultAmount": p.defaultAmount,
+              "isDefault": p.isDefault,
+              "quickAdd": p.quickAdd
+            })
+      });
+      foodItems.add(Food(ref.id, name, kcal, portions));
+    }
+  }
+
+  static Future<void> archiveFood(Food food, bool archive) async {
+    await db
+        .collection("food")
+        .doc(food.id)
+        .update({
+      "archived": archive
+    });
+
+    food.archived = archive;
+  }
+
+  static Future<void> addMeal(
+      Food food, Portion portion, double quantityEaten, DateTime date) async {
     int kcalEaten = Store._getKcalEaten(food, portion, quantityEaten);
     DateTime added = DateTime.now();
     var ref = await db
@@ -58,8 +115,8 @@ class Store {
       "added": added
     });
 
-    mealItems.add(Meal(ref.id, food.id, food.name,
-        portion.unit, quantityEaten, kcalEaten, added));
+    mealItems.add(Meal(ref.id, food.id, food.name, portion.unit, quantityEaten,
+        kcalEaten, added));
     kcalEatenToday += kcalEaten;
   }
 
@@ -74,29 +131,33 @@ class Store {
     mealItems.remove(meal);
     kcalEatenToday -= meal.kcal;
   }
+  
+  static Future<void> updateKcalAllowed(int kcal) async {
+    await db.collection("settings").doc("settings").set({
+      "kcalAllowed": kcal
+    });
+    Store.kcalAllowed = kcal;
+  }
 
   static int _getKcalEaten(Food food, Portion portion, double quantity) {
-    return ((food.kcal) /
-        1000 *
-        quantity *
-        (portion.grams))
-        .round();
+    return ((food.kcal) / 1000 * quantity * (portion.grams)).round();
   }
 }
-
 
 class Food {
   String id;
   String name;
   int kcal;
   List<Portion> portions;
+  bool archived = false;
 
-  Food(this.id, this.name, this.kcal, this.portions) {
+  Food(this.id, this.name, this.kcal, this.portions, { this.archived = false }) {
     id = id;
     name = name;
     kcal = kcal;
     portions = portions;
     portions.add(Portion("gram", 1, 0, false, false));
+    archived = archived;
   }
 
   static Food create(String id, Map<String, dynamic> data) {
@@ -106,7 +167,7 @@ class Food {
         portionsList.add(Portion.create(p));
       }
     }
-    return Food(id, data["name"] ?? "", data["kcal"] ?? 0, portionsList);
+    return Food(id, data["name"] ?? "", data["kcal"] ?? 0, portionsList, archived: data["archived"] ?? false);
   }
 }
 
@@ -117,11 +178,16 @@ class Portion {
   bool isDefault;
   bool quickAdd;
 
-  Portion(this.unit, this.grams, this.defaultAmount, this.isDefault, this.quickAdd);
+  Portion(
+      this.unit, this.grams, this.defaultAmount, this.isDefault, this.quickAdd);
 
   static Portion create(Map<String, dynamic> data) {
-    return Portion(data["unit"] ?? "", data["grams"] ?? 0,
-        data["defaultAmount"] ?? 0, data["isDefault"] ?? false, data["quickAdd"] ?? false);
+    return Portion(
+        data["unit"] ?? "",
+        data["grams"] ?? 0,
+        data["defaultAmount"] ?? 0,
+        data["isDefault"] ?? false,
+        data["quickAdd"] ?? false);
   }
 }
 
@@ -134,8 +200,8 @@ class Meal {
   int kcal;
   DateTime? added;
 
-  Meal(
-      this.id, this.foodId, this.foodName, this.unit, this.quantity, this.kcal, this.added);
+  Meal(this.id, this.foodId, this.foodName, this.unit, this.quantity, this.kcal,
+      this.added);
 
   static Meal create(String id, Map<String, dynamic> data) {
     Timestamp? added = data["added"];
