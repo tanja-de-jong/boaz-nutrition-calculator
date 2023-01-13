@@ -88,7 +88,7 @@ class _FoodSettingsState extends State<FoodSettings> {
                   .map((item) => Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("${item.name} ${item.archived}"),
+                            Text(item.name),
                             Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
