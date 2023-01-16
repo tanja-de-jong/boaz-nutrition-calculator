@@ -57,11 +57,12 @@ class Store {
   }
 
   static Future<void> addFood(
-      String? id, String name, int kcal, List<Portion> portions) async {
+      String? id, String name, int kcal, String url, List<Portion> portions) async {
     if (id != null) {
       await db.collection("food").doc(id).set({
         "name": name,
         "kcal": kcal,
+        "url": url,
         "portions": portions.map((p) => {
               "unit": p.unit,
               "grams": p.grams,
@@ -77,6 +78,7 @@ class Store {
       DocumentReference ref = await db.collection("food").add({
         "name": name,
         "kcal": kcal,
+        "url": url,
         "portions": portions.map((p) => {
               "unit": p.unit,
               "grams": p.grams,
@@ -152,8 +154,9 @@ class Food {
   int kcal;
   List<Portion> portions;
   bool archived = false;
+  String url;
 
-  Food(this.id, this.name, this.kcal, this.portions, { this.archived = false }) {
+  Food(this.id, this.name, this.kcal, this.portions, { this.archived = false, this.url = "" }) {
     id = id;
     name = name;
     kcal = kcal;
@@ -169,7 +172,7 @@ class Food {
         portionsList.add(Portion.create(p));
       }
     }
-    return Food(id, data["name"] ?? "", data["kcal"] ?? 0, portionsList, archived: data["archived"] ?? false);
+    return Food(id, data["name"] ?? "", data["kcal"] ?? 0, portionsList, archived: data["archived"] ?? false, url: data["url"] ?? "");
   }
 }
 

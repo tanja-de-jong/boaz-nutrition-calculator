@@ -16,8 +16,8 @@ class _FoodSettingsState extends State<FoodSettings> {
   int kcalAllowed = Store.kcalAllowed;
   bool showArchivedFoods = false;
 
-  addFood(String? id, String name, int kcal, List<Portion> portions) async {
-    await Store.addFood(id, name, kcal, portions);
+  addFood(String? id, String name, int kcal, String url, List<Portion> portions) async {
+    await Store.addFood(id, name, kcal, url, portions);
     setState(() {
       foodItems = Store.foodItems;
     });
@@ -32,6 +32,15 @@ class _FoodSettingsState extends State<FoodSettings> {
 
   void updateKcalAllowed(int value) {
     Store.updateKcalAllowed(value);
+  }
+
+  void filterItems(String filter) {
+    setState(() {
+      foodItems = Store.foodItems
+          .where((element) =>
+              element.name.toLowerCase().contains(filter.toLowerCase()))
+          .toList();
+    });
   }
 
   Widget build(BuildContext context) {
@@ -84,7 +93,29 @@ class _FoodSettingsState extends State<FoodSettings> {
               SizedBox(height: 10),
               Divider(),
               SizedBox(height: 10),
-              ...foodItems.where((f) => !f.archived)
+              SizedBox(
+                  height: 30,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      hintText: 'Zoek eten...',
+                      hintStyle: const TextStyle(fontSize: 12),
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide:
+                            const BorderSide(color: Colors.grey, width: 0.0),
+                      ),
+                    ),
+                    onChanged: filterItems,
+                  )),
+              SizedBox(height: 10),
+              ...foodItems
+                  .where((f) => !f.archived)
                   .map((item) => Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -114,50 +145,52 @@ class _FoodSettingsState extends State<FoodSettings> {
                           ]))
                   .toList(),
               if (Store.activeFoodItems.isNotEmpty)
-                Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextButton(
-                          onPressed: () {
-                            setState(() {
-                              showArchivedFoods = !showArchivedFoods;
-                            });
-                          },
-                          child: Row(children: [
-                            const Text('Gearchiveerd'),
-                            Icon(showArchivedFoods
-                                ? Icons.keyboard_arrow_down
-                                : Icons.keyboard_arrow_up)
-                          ])),
-                    ]),
-              if (showArchivedFoods) ...foodItems.where((f) => f.archived)
-                  .map((item) => Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(item.name),
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          IconButton(
-                              padding: const EdgeInsets.all(3),
-                              constraints: const BoxConstraints(),
-                              iconSize: 17,
-                              splashRadius: 13,
-                              onPressed: () {
-                                addDialog(item);
-                              },
-                              icon: const Icon(Icons.edit)),
-                          IconButton(
-                              padding: const EdgeInsets.all(3),
-                              constraints: const BoxConstraints(),
-                              iconSize: 18,
-                              splashRadius: 13,
-                              onPressed: () {
-                                restoreDialog(item); },
-                              icon: const Icon(Icons.restore_from_trash)),
-                        ])
-                  ]))
-                  .toList()
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  TextButton(
+                      onPressed: () {
+                        setState(() {
+                          showArchivedFoods = !showArchivedFoods;
+                        });
+                      },
+                      child: Row(children: [
+                        const Text('Gearchiveerd'),
+                        Icon(showArchivedFoods
+                            ? Icons.keyboard_arrow_down
+                            : Icons.keyboard_arrow_up)
+                      ])),
+                ]),
+              if (showArchivedFoods)
+                ...foodItems
+                    .where((f) => f.archived)
+                    .map((item) => Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(item.name),
+                              Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    IconButton(
+                                        padding: const EdgeInsets.all(3),
+                                        constraints: const BoxConstraints(),
+                                        iconSize: 17,
+                                        splashRadius: 13,
+                                        onPressed: () {
+                                          addDialog(item);
+                                        },
+                                        icon: const Icon(Icons.edit)),
+                                    IconButton(
+                                        padding: const EdgeInsets.all(3),
+                                        constraints: const BoxConstraints(),
+                                        iconSize: 18,
+                                        splashRadius: 13,
+                                        onPressed: () {
+                                          restoreDialog(item);
+                                        },
+                                        icon: const Icon(
+                                            Icons.restore_from_trash)),
+                                  ])
+                            ]))
+                    .toList()
             ])),
         floatingActionButton: FloatingActionButton(
           onPressed: () => addDialog(null),
@@ -174,6 +207,7 @@ class _FoodSettingsState extends State<FoodSettings> {
   addDialog(Food? food) {
     String? name = food?.name;
     int? kcal = food?.kcal;
+    String url = food?.url ?? "";
     List<Portion> portions =
         food == null ? [Portion("gram", 1, 1, false, false)] : food.portions;
     bool expandNewPortion = false;
@@ -198,7 +232,7 @@ class _FoodSettingsState extends State<FoodSettings> {
         builder: (BuildContext context) {
           return StatefulBuilder(builder: (context, setState) {
             return SimpleDialog(
-                title: const SelectableText('Maaltijd toevoegen'),
+                title: const SelectableText('Eten toevoegen'),
                 children: [
                   Container(
                       padding: const EdgeInsets.only(left: 25, right: 25),
@@ -225,6 +259,14 @@ class _FoodSettingsState extends State<FoodSettings> {
                                     FilteringTextInputFormatter.digitsOnly
                                   ],
                                 )),
+                            const SizedBox(height: 10),
+                            getRow(
+                                "Url",
+                                TextFormField(
+                                    initialValue: url,
+                                    decoration: InputDecoration(isDense: true),
+                                    onChanged: (value) =>
+                                        setState(() => {url = value}))),
                             const SizedBox(height: 10),
                             const Text(
                               "Porties",
@@ -370,7 +412,7 @@ class _FoodSettingsState extends State<FoodSettings> {
                                                   if (newPortion.isDefault) {
                                                     for (Portion p
                                                         in portions) {
-                                                        p.isDefault = false;
+                                                      p.isDefault = false;
                                                     }
                                                   }
 
@@ -425,6 +467,7 @@ class _FoodSettingsState extends State<FoodSettings> {
                                                   food?.id,
                                                   name!,
                                                   kcal!,
+                                                  url,
                                                   portions.sublist(
                                                       0, portions.length - 1));
                                               Navigator.pop(context);
@@ -453,18 +496,18 @@ class _FoodSettingsState extends State<FoodSettings> {
                   const SizedBox(height: 20),
                   Center(
                       child: Wrap(spacing: 10, children: [
-                        OutlinedButton(
-                            onPressed: () {
-                              archiveFood(food, true);
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Ja')),
-                        ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Nee')),
-                      ]))
+                    OutlinedButton(
+                        onPressed: () {
+                          archiveFood(food, true);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Ja')),
+                    ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Nee')),
+                  ]))
                 ])
               ]);
         });
@@ -485,18 +528,18 @@ class _FoodSettingsState extends State<FoodSettings> {
                   const SizedBox(height: 20),
                   Center(
                       child: Wrap(spacing: 10, children: [
-                        OutlinedButton(
-                            onPressed: () {
-                              archiveFood(food, false);
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Ja')),
-                        ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Nee')),
-                      ]))
+                    OutlinedButton(
+                        onPressed: () {
+                          archiveFood(food, false);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Ja')),
+                    ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Nee')),
+                  ]))
                 ])
               ]);
         });
