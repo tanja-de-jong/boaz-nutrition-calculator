@@ -108,6 +108,10 @@ class _MyHomePageState extends State<MyHomePage> {
     return DateFormat("EEE dd-MM-yyyy", "nl").format(selectedDate);
   }
 
+  int getKcal() {
+    return ((selectedFood?.kcal ?? 0) / 1000 * quantityEaten * (selectedPortion?.grams ?? 0)).round();
+  }
+
   Widget getAddMealWidget() {
     final TextEditingController textEditingController = TextEditingController();
 
@@ -148,7 +152,18 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
-    Widget foodDropdown = DropdownButton2<Food>(
+    Widget foodDropdown = SizedBox(height: 30, width: 250, child: DropdownButtonFormField2<Food>(
+      decoration: InputDecoration(
+        //Add isDense true and zero Padding.
+        //Add Horizontal padding using buttonPadding and Vertical padding by increasing buttonHeight instead of add Padding here so that The whole TextField Button become clickable, and also the dropdown menu open under The whole TextField Button.
+        isDense: true,
+        contentPadding: EdgeInsets.only(left: 15, right: 15),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        //Add more decoration as you want here
+        //Add label If you want but add hint outside the decoration to be aligned in the button perfectly.
+      ),
       isExpanded: true,
       hint: Text(
         "Kies eten",
@@ -171,6 +186,7 @@ class _MyHomePageState extends State<MyHomePage> {
       buttonWidth: 250,
       itemHeight: 40,
       dropdownMaxHeight: 200,
+
       searchController: textEditingController,
       searchInnerWidget: Padding(
         padding: const EdgeInsets.only(
@@ -188,17 +204,28 @@ class _MyHomePageState extends State<MyHomePage> {
       onMenuStateChange: (isOpen) {
         if (!isOpen) {
           textEditingController.clear();
-          FocusScope.of(context).requestFocus(new FocusNode());
+          FocusScope.of(context).requestFocus(FocusNode());
         } else {
           foodFocusNode.requestFocus();
         }
       },
-    );
+    ));
     Widget quantityLabel = const SelectableText('Hoeveelheid');
     Widget quantityNumber = SizedBox(
-        width: 30,
+        width: 50,
+        height: 30,
         child: TextFormField(
-          decoration: InputDecoration(isDense: true),
+          decoration: InputDecoration(
+            //Add isDense true and zero Padding.
+            //Add Horizontal padding using buttonPadding and Vertical padding by increasing buttonHeight instead of add Padding here so that The whole TextField Button become clickable, and also the dropdown menu open under The whole TextField Button.
+            isDense: true,
+            contentPadding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            //Add more decoration as you want here
+            //Add label If you want but add hint outside the decoration to be aligned in the button perfectly.
+          ),
           initialValue: selectedPortion?.defaultAmount.toString(),
           keyboardType: const TextInputType.numberWithOptions(
               decimal: true, signed: false),
@@ -219,7 +246,18 @@ class _MyHomePageState extends State<MyHomePage> {
             });
           },
         ));
-    Widget unitDropdown = DropdownButton<Portion>(
+    Widget unitDropdown = SizedBox(height: 30, width: 100, child: DropdownButtonFormField<Portion>(
+        decoration: InputDecoration(
+          //Add isDense true and zero Padding.
+          //Add Horizontal padding using buttonPadding and Vertical padding by increasing buttonHeight instead of add Padding here so that The whole TextField Button become clickable, and also the dropdown menu open under The whole TextField Button.
+          isDense: true,
+          contentPadding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          //Add more decoration as you want here
+          //Add label If you want but add hint outside the decoration to be aligned in the button perfectly.
+        ),
         value: selectedPortion,
         items: selectedFood?.portions.map((Portion portion) {
           return DropdownMenuItem<Portion>(
@@ -229,16 +267,16 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() {
             selectedPortion = value;
           });
-        });
+        }));
 
-    Widget addButton = ElevatedButton.icon(style: ButtonStyle(shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+    Widget addButton = SizedBox(width: 120, child: ElevatedButton.icon(style: ButtonStyle(shape: MaterialStateProperty.all<RoundedRectangleBorder>(
         RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30.0),
         )
-    )), icon: Icon(Icons.add), label: Text(
-        "${(selectedFood?.kcal ?? 0) / 1000 * quantityEaten * (selectedPortion?.grams ?? 0)} kcal"), onPressed: selectedFood != null && selectedPortion != null
+    )), icon: const Icon(Icons.add), label: Text(
+        "${getKcal()} kcal"), onPressed: selectedFood != null && selectedPortion != null
         ? () => addMeal(selectedFood!, selectedPortion!, quantityEaten)
-        : null,);
+        : null,));
 
     return Center(
         child: Container(
@@ -247,6 +285,7 @@ class _MyHomePageState extends State<MyHomePage> {
             decoration: BoxDecoration(border: Border.all()),
             child: Column(children: [
               quickAddButtons,
+              const SizedBox(height: 10),
               MediaQuery.of(context).size.width >= 700
                   ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       foodLabel,
@@ -256,15 +295,13 @@ class _MyHomePageState extends State<MyHomePage> {
                       quantityLabel,
                       const SizedBox(width: 10),
                       quantityNumber,
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 5),
                       unitDropdown,
                       const SizedBox(width: 10),
                       addButton
                     ])
                   : Column(
                       children: [
-                        if (Store.quickAddItems.isNotEmpty)
-                          const SizedBox(height: 10),
                         foodLabel,
                         const SizedBox(height: 10),
                         foodDropdown,
@@ -275,7 +312,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               quantityNumber,
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 5),
                               unitDropdown,
                             ]),
                         const SizedBox(height: 10),
