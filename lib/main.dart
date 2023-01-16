@@ -230,10 +230,10 @@ class _MyHomePageState extends State<MyHomePage> {
           keyboardType: const TextInputType.numberWithOptions(
               decimal: true, signed: false),
           inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r"[0-9.]")),
+            FilteringTextInputFormatter.allow(RegExp(r"[0-9.,]")),
             TextInputFormatter.withFunction((oldValue, newValue) {
               try {
-                final text = newValue.text;
+                final text = newValue.text.replaceAll(RegExp(r','), ".");
                 if (text.isNotEmpty) double.parse(text);
                 return newValue;
               } catch (e) {}
@@ -242,7 +242,10 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
           onChanged: (value) {
             setState(() {
-              if (value != "") quantityEaten = double.parse(value);
+              if (value != "") {
+                value = value.replaceAll(RegExp(r','), ".");
+                quantityEaten = double.parse(value);
+              }
             });
           },
         ));
