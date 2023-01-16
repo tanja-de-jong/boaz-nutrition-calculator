@@ -131,6 +131,23 @@ class _MyHomePageState extends State<MyHomePage> {
                         )))))
             .toList());
     Widget foodLabel = const SelectableText('Eten');
+    FocusNode foodFocusNode = FocusNode();
+    Widget foodSearchField = TextFormField(
+      focusNode: foodFocusNode,
+      controller: textEditingController,
+      decoration: InputDecoration(
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 8,
+        ),
+        hintText: 'Zoek item...',
+        hintStyle: const TextStyle(fontSize: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
     Widget foodDropdown = DropdownButton2<Food>(
       isExpanded: true,
       hint: Text(
@@ -162,44 +179,21 @@ class _MyHomePageState extends State<MyHomePage> {
           right: 8,
           left: 8,
         ),
-        child: TextFormField(
-          controller: textEditingController,
-          decoration: InputDecoration(
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 8,
-            ),
-            hintText: 'Zoek item...',
-            hintStyle: const TextStyle(fontSize: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
+        child: foodSearchField
       ),
       searchMatchFn: (item, searchValue) {
-        print(item.value.toString());
         return (item.value.name.toString().toLowerCase().contains(searchValue.toLowerCase()));
       },
       //This to clear the search value when you close the menu
       onMenuStateChange: (isOpen) {
         if (!isOpen) {
           textEditingController.clear();
+          FocusScope.of(context).requestFocus(new FocusNode());
+        } else {
+          foodFocusNode.requestFocus();
         }
       },
     );
-    Widget foodDropdownMin = DropdownButton<Food>(
-        value: selectedFood,
-        items: Store.activeFoodItems.map((Food food) {
-          return DropdownMenuItem<Food>(value: food, child: Text(food.name));
-        }).toList(),
-        onChanged: (value) {
-          setState(() {
-            selectedFood = value;
-            selectedPortion = selectedFood?.portions[0];
-          });
-        });
     Widget quantityLabel = const SelectableText('Hoeveelheid');
     Widget quantityNumber = SizedBox(
         width: 30,
