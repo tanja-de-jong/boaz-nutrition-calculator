@@ -39,6 +39,7 @@ dependencies:
   percent_indicator: ^4.2.2
   intl: ^0.18.0
   get: ^4.6.5
+  dropdown_button2: ^1.9.2
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:boaz_nutrition_calculator/store.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -108,6 +109,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget getAddMealWidget() {
+    final TextEditingController textEditingController = TextEditingController();
+
     Widget quickAddButtons = Wrap(
         spacing: 5,
         runSpacing: 5,
@@ -128,7 +131,65 @@ class _MyHomePageState extends State<MyHomePage> {
                         )))))
             .toList());
     Widget foodLabel = const SelectableText('Eten');
-    Widget foodDropdown = DropdownButton<Food>(
+    Widget foodDropdown = DropdownButton2<Food>(
+      isExpanded: true,
+      hint: Text(
+        "Kies eten",
+        style: TextStyle(
+          fontSize: 14,
+          color: Theme.of(context).hintColor,
+        ),
+      ),
+      items: Store.activeFoodItems.map((Food food) {
+        return DropdownMenuItem<Food>(value: food, child: Text(food.name));
+      }).toList(),
+      value: selectedFood,
+      onChanged: (value) {
+        setState(() {
+          selectedFood = value;
+          selectedPortion = selectedFood?.portions[0];
+        });
+      },
+      buttonHeight: 40,
+      buttonWidth: 250,
+      itemHeight: 40,
+      dropdownMaxHeight: 200,
+      searchController: textEditingController,
+      searchInnerWidget: Padding(
+        padding: const EdgeInsets.only(
+          top: 8,
+          bottom: 4,
+          right: 8,
+          left: 8,
+        ),
+        child: TextFormField(
+          controller: textEditingController,
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 8,
+            ),
+            hintText: 'Zoek item...',
+            hintStyle: const TextStyle(fontSize: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ),
+      searchMatchFn: (item, searchValue) {
+        print(item.value.toString());
+        return (item.value.name.toString().toLowerCase().contains(searchValue.toLowerCase()));
+      },
+      //This to clear the search value when you close the menu
+      onMenuStateChange: (isOpen) {
+        if (!isOpen) {
+          textEditingController.clear();
+        }
+      },
+    );
+    Widget foodDropdownMin = DropdownButton<Food>(
         value: selectedFood,
         items: Store.activeFoodItems.map((Food food) {
           return DropdownMenuItem<Food>(value: food, child: Text(food.name));
@@ -175,18 +236,15 @@ class _MyHomePageState extends State<MyHomePage> {
             selectedPortion = value;
           });
         });
-    Widget kcalLabel = Container(
-        padding: const EdgeInsets.only(top: 5, bottom: 5, left: 10, right: 10),
-        decoration: const BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(30)),
-            color: Colors.blue),
-        child: Text(
-            "${(selectedFood?.kcal ?? 0) / 1000 * quantityEaten * (selectedPortion?.grams ?? 0)} kcal"));
-    Widget addButton = IconButton(
-        onPressed: selectedFood != null && selectedPortion != null
-            ? () => addMeal(selectedFood!, selectedPortion!, quantityEaten)
-            : null,
-        icon: const Icon(Icons.add));
+
+    Widget addButton = ElevatedButton.icon(style: ButtonStyle(shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+        RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30.0),
+        )
+    )), icon: Icon(Icons.add), label: Text(
+        "${(selectedFood?.kcal ?? 0) / 1000 * quantityEaten * (selectedPortion?.grams ?? 0)} kcal"), onPressed: selectedFood != null && selectedPortion != null
+        ? () => addMeal(selectedFood!, selectedPortion!, quantityEaten)
+        : null,);
 
     return Center(
         child: Container(
@@ -207,8 +265,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       const SizedBox(width: 10),
                       unitDropdown,
                       const SizedBox(width: 10),
-                      kcalLabel,
-                      const SizedBox(width: 10),
                       addButton
                     ])
                   : Column(
@@ -228,8 +284,6 @@ class _MyHomePageState extends State<MyHomePage> {
                               const SizedBox(width: 10),
                               unitDropdown,
                             ]),
-                        const SizedBox(height: 10),
-                        kcalLabel,
                         const SizedBox(height: 10),
                         addButton
                       ],
