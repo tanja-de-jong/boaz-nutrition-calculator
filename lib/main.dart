@@ -371,7 +371,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   padding: EdgeInsets.only(right: 20.0),
                   child: GestureDetector(
                     onTap: () {
-                      Navigator.of(context).pushReplacement(
+                      Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (context) => const FoodSettings()),
                       );

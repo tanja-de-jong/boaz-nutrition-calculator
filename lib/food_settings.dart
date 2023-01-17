@@ -50,23 +50,24 @@ class _FoodSettingsState extends State<FoodSettings> {
             // Here we take the value from the MyHomePage object that was created by
             // the App.build method, and use it to set our appbar title.
             title: const Text("Instellingen"),
-            actions: <Widget>[
-              Padding(
-                  padding: EdgeInsets.only(right: 20.0),
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                            builder: (context) => const MyHomePage(
-                                title: 'Boaz\' Voercalculator')),
-                      );
-                    },
-                    child: Icon(
-                      Icons.close,
-                      size: 26.0,
-                    ),
-                  )),
-            ]),
+            // actions: <Widget>[
+            //   Padding(
+            //       padding: EdgeInsets.only(right: 20.0),
+            //       child: GestureDetector(
+            //         onTap: () {
+            //           Navigator.of(context).pushReplacement(
+            //             MaterialPageRoute(
+            //                 builder: (context) => const MyHomePage(
+            //                     title: 'Boaz\' Voercalculator')),
+            //           );
+            //         },
+            //         child: Icon(
+            //           Icons.close,
+            //           size: 26.0,
+            //         ),
+            //       )),
+            // ]
+            ),
         body: SingleChildScrollView(
             padding: EdgeInsets.all(15),
             child: Column(children: [
