@@ -16,7 +16,8 @@ class _FoodSettingsState extends State<FoodSettings> {
   int kcalAllowed = Store.kcalAllowed;
   bool showArchivedFoods = false;
 
-  addFood(String? id, String name, int kcal, String url, List<Portion> portions) async {
+  addFood(String? id, String name, int kcal, String url,
+      List<Portion> portions) async {
     await Store.addFood(id, name, kcal, url, portions);
     setState(() {
       foodItems = Store.foodItems;
@@ -199,9 +200,11 @@ class _FoodSettingsState extends State<FoodSettings> {
   }
 
   Row getRow(String label, Widget value) {
-    return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [Expanded(child: Text(label)), Expanded(child: value)]);
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Expanded(child: Text(label)),
+      SizedBox(width: 10),
+      Expanded(child: value)
+    ]);
   }
 
   addDialog(Food? food) {
@@ -217,6 +220,36 @@ class _FoodSettingsState extends State<FoodSettings> {
     String defaultAmount = "";
     bool isDefault = false;
     bool quickAdd = false;
+    bool showCalculate = false;
+    double eiwit = 0;
+    double vet = 0;
+    double vocht = 0;
+    double as = 0;
+    double celstof = 0;
+    final kcalController = TextEditingController();
+
+    double getKhd() {
+      return 100 - eiwit - vet - vocht - as - celstof;
+    }
+
+    TextField getDoubleTextField(onChanged) {
+      return TextField(
+          decoration: const InputDecoration(isDense: true),
+          keyboardType: const TextInputType.numberWithOptions(
+              decimal: true, signed: false),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r"[0-9.,]")),
+            TextInputFormatter.withFunction((oldValue, newValue) {
+              try {
+                final text = newValue.text.replaceAll(RegExp(r','), ".");
+                if (text.isNotEmpty) double.parse(text);
+                return newValue;
+              } catch (e) {}
+              return oldValue;
+            }),
+          ],
+          onChanged: onChanged);
+    }
 
     void setPortion(Portion? portion) {
       selectedPortion = portion;
@@ -225,6 +258,16 @@ class _FoodSettingsState extends State<FoodSettings> {
       defaultAmount = portion?.defaultAmount.toString() ?? "";
       isDefault = portion?.isDefault ?? false;
       quickAdd = portion?.quickAdd ?? false;
+    }
+
+    @override
+    void dispose() {
+      kcalController.dispose();
+      super.dispose();
+    }
+
+    initState() {
+      kcalController.text = kcal == null ? "" : kcal.toString();
     }
 
     showDialog(
@@ -249,16 +292,122 @@ class _FoodSettingsState extends State<FoodSettings> {
                             const SizedBox(height: 10),
                             getRow(
                                 "Kcal per kg",
-                                TextFormField(
-                                  initialValue: kcal?.toString(),
-                                  decoration: InputDecoration(isDense: true),
-                                  onChanged: (value) =>
-                                      setState(() => {kcal = int.parse(value)}),
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly
-                                  ],
-                                )),
+                                Row(children: [
+                                  Expanded(
+                                      child: TextField(
+                                    controller: kcalController,
+                                    decoration: InputDecoration(isDense: true),
+                                    onChanged: (value) => setState(
+                                        () => {kcal = int.parse(value)}),
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly
+                                    ],
+                                  )),
+                                  IconButton(
+                                    icon: const Icon(Icons.calculate),
+                                    padding: const EdgeInsets.all(3),
+                                    constraints: const BoxConstraints(),
+                                    iconSize: 17,
+                                    splashRadius: 13,
+                                    onPressed: () {
+                                      setState(() {
+                                        showCalculate = true;
+                                      });
+                                    },
+                                  )
+                                ])),
+                            if (showCalculate)
+                              Container(
+                                  margin: const EdgeInsets.all(15.0),
+                                  padding: const EdgeInsets.all(15.0),
+                                  decoration:
+                                      BoxDecoration(border: Border.all()),
+                                  child: Column(children: [
+                                    getRow("Eiwit", getDoubleTextField((value) {
+                                      setState(() {
+                                        if (value != "") {
+                                          value = value.replaceAll(
+                                              RegExp(r','), ".");
+                                          eiwit = double.parse(value);
+                                        } else {
+                                          eiwit = 0;
+                                        }
+                                      });
+                                    })),
+                                    getRow("Vet", getDoubleTextField((value) {
+                                      setState(() {
+                                        if (value != "") {
+                                          value = value.replaceAll(
+                                              RegExp(r','), ".");
+                                          vet = double.parse(value);
+                                        } else {
+                                          vet = 0;
+                                        }
+                                      });
+                                    })),
+                                    getRow("Vocht", getDoubleTextField((value) {
+                                      setState(() {
+                                        if (value != "") {
+                                          value = value.replaceAll(
+                                              RegExp(r','), ".");
+                                          vocht = double.parse(value);
+                                        } else {
+                                          vocht = 0;
+                                        }
+                                      });
+                                    })),
+                                    getRow("Ruwe as",
+                                        getDoubleTextField((value) {
+                                      setState(() {
+                                        if (value != "") {
+                                          value = value.replaceAll(
+                                              RegExp(r','), ".");
+
+                                          as = double.parse(value);
+                                        } else {
+                                          as = 0;
+                                        }
+                                      });
+                                    })),
+                                    getRow("Ruwe celstof",
+                                        getDoubleTextField((value) {
+                                      setState(() {
+                                        if (value != "") {
+                                          value = value.replaceAll(
+                                              RegExp(r','), ".");
+                                          celstof = double.parse(value);
+                                        } else {
+                                          celstof = 0;
+                                        }
+                                      });
+                                    })),
+                                    const SizedBox(height: 10),
+                                    ElevatedButton(
+                                        onPressed: (eiwit == 0 &&
+                                                vet == 0 &&
+                                                vocht == 0 &&
+                                                as == 0 &&
+                                                celstof == 0)
+                                            ? null
+                                            : () {
+                                                setState(() {
+                                                  kcal = (eiwit * 10 * 4.6 +
+                                                          vet * 10 * 8.6 +
+                                                          getKhd() * 10 * 4.6)
+                                                      .round();
+                                                  kcalController.text =
+                                                      kcal.toString();
+                                                  showCalculate = false;
+                                                  eiwit = 0;
+                                                  vet = 0;
+                                                  vocht = 0;
+                                                  as = 0;
+                                                  celstof = 0;
+                                                });
+                                              },
+                                        child: const Text("Bereken"))
+                                  ])),
                             const SizedBox(height: 10),
                             getRow(
                                 "Url",
