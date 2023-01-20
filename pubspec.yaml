@@ -40,6 +40,9 @@ dependencies:
   intl: ^0.18.0
   get: ^4.6.5
   dropdown_button2: ^1.9.2
+  firebase_auth: ^4.2.2
+  google_sign_in: ^5.4.3
+  flutter_signin_button: ^2.0.0
 
 dev_dependencies:
   flutter_test:

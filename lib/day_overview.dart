@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:boaz_nutrition_calculator/authentication.dart';
 import 'package:boaz_nutrition_calculator/store.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
@@ -329,6 +330,17 @@ class _DayOverviewState extends State<DayOverview> {
                       size: 26.0,
                     ),
                   )),
+              // Padding(
+              //     padding: EdgeInsets.only(right: 20.0),
+              //     child: GestureDetector(
+              //       onTap: () {
+              //         Authentication.signOut(context: context);
+              //       },
+              //       child: Icon(
+              //         Icons.logout,
+              //         size: 26.0,
+              //       ),
+              //     )),
             ]),
         body: loading
             ? const Center(child: CircularProgressIndicator())

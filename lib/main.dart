@@ -1,14 +1,20 @@
 import 'dart:math';
 
 import 'package:boaz_nutrition_calculator/day_overview.dart';
+import 'package:boaz_nutrition_calculator/sign_in.dart';
 import 'package:boaz_nutrition_calculator/store.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_signin_button/button_list.dart';
+import 'package:flutter_signin_button/button_view.dart';
+import 'package:flutter_signin_button/flutter_signin_button.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'authentication.dart';
 import 'firebase_options.dart'; // generated via `flutterfire` CLI
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
@@ -72,6 +78,37 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    return DayOverview();
+    return StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.active:
+              final firebaseUser = snapshot.data;
+              if (firebaseUser == null) {
+                return SizedBox(height: 30, width: 100, child: SignInScreen());
+                  // Expanded(child: SignInButton(
+                  //   Buttons.Google,
+                  //   text: "Log in met Google",
+                  //   onPressed: () =>
+                  //       Authentication.signInWithGoogle(context: context),
+                  // ));
+              }
+              return DayOverview();
+            default:
+              return Container(
+                  constraints: BoxConstraints(maxWidth: 1000),
+                  child: Center(
+                    child: ElevatedButton(
+                        onPressed: () =>
+                            Authentication.signInWithGoogle(context: context),
+                        child: Text("Inloggen met Google")),
+                  ));
+            //   Center(child: CircularProgressIndicator(
+            //     valueColor: AlwaysStoppedAnimation<Color>(
+            //       Colors.pink,
+            //     )),
+            // );
+          }
+        });
   }
 }
