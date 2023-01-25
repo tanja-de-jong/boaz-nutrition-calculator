@@ -9,11 +9,12 @@ class Store {
   static List<QuickAdd> quickAddItems = [];
   static int kcalAllowed = 1000;
   static int kcalEatenToday = 0;
+  static String? comment;
 
   static Future<void> loadData() async {
     await loadSettings();
     await loadFood();
-    await loadMealsForDate(DateTime.now());
+    await loadMealsAndCommentForDate(DateTime.now());
   }
 
   static Future<void> loadSettings() async {
@@ -38,10 +39,11 @@ class Store {
     }
   }
 
-  static Future<void> loadMealsForDate(DateTime date) async {
-    var mealDocs = (await db
-            .collection("days")
-            .doc(DateFormat("yyyy-MM-dd").format(date))
+  static Future<void> loadMealsAndCommentForDate(DateTime date) async {
+    DocumentReference<Map<String, dynamic>> dateDoc = db.collection("days").doc(DateFormat("yyyy-MM-dd").format(date));
+    comment = (await dateDoc.get()).data()?["comment"];
+
+    var mealDocs = (await dateDoc
             .collection("meals")
             .get())
         .docs;
@@ -135,7 +137,14 @@ class Store {
     mealItems.remove(meal);
     kcalEatenToday -= meal.kcal;
   }
-  
+
+  static Future<void> addComment(DateTime date, String comment) async {
+    print("Add comment");
+    await db.collection("days").doc(DateFormat("yyyy-MM-dd").format(date)).set({
+      "comment": comment
+    });
+  }
+
   static Future<void> updateKcalAllowed(int kcal) async {
     await db.collection("settings").doc("settings").set({
       "kcalAllowed": kcal
