@@ -83,7 +83,11 @@ class _DayOverviewState extends State<DayOverview> {
                     width: 200,
                     child: ElevatedButton.icon(
                         onPressed: () {
-                          addMeal(i.food, i.portion, i.portion.defaultAmount);
+                          addMeal(i.food, i.portion, i.portion.defaultAmount)
+                              .then((value) => ScaffoldMessenger.of(context)
+                                  .showSnackBar(const SnackBar(
+                                      content:
+                                          Text("Eten succesvol toegevoegd."))));
                         },
                         icon: const Icon(Icons.add),
                         label: Text(
@@ -251,6 +255,9 @@ class _DayOverviewState extends State<DayOverview> {
           label: Text("${getKcal()} kcal"),
           onPressed: selectedFood != null && selectedPortion != null
               ? () => addMeal(selectedFood!, selectedPortion!, quantityEaten)
+                  .then((value) => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Eten succesvol toegevoegd."))))
               : null,
         ));
 
@@ -409,9 +416,13 @@ class _DayOverviewState extends State<DayOverview> {
                                 : Container())
                       ]),
                   if (comment != null) const SizedBox(height: 20),
-                  if (comment != null && comment != "")  Padding(
-    padding: const EdgeInsets.only(left: 15, right: 15),
-    child: Text(comment!, style: TextStyle(fontStyle: FontStyle.italic),)),
+                  if (comment != null && comment != "")
+                    Padding(
+                        padding: const EdgeInsets.only(left: 15, right: 15),
+                        child: Text(
+                          comment!,
+                          style: TextStyle(fontStyle: FontStyle.italic),
+                        )),
                   const SizedBox(height: 20),
                   CircularPercentIndicator(
                       radius: 60.0,
@@ -459,33 +470,36 @@ class _DayOverviewState extends State<DayOverview> {
                           ]))),
                   const SizedBox(height: 20),
                   Padding(
-                      padding: const EdgeInsets.only(left: 15, right: 15, bottom: 10),
+                      padding: const EdgeInsets.only(
+                          left: 15, right: 15, bottom: 10),
                       child: SizedBox(
                           child: TextFormField(
-                            controller: commentController,
-                            minLines: 3,
-                            keyboardType: TextInputType.multiline,
-                            maxLines: null,
-                            decoration: InputDecoration(
-                              hintText: "Voeg opmerking toe...",
-                              isDense: true,
-                              contentPadding: const EdgeInsets.only(
-                                  left: 10, right: 10, top: 10, bottom: 10),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                comment = value;
-                              });
-                            },
-                          ))),
+                        controller: commentController,
+                        minLines: 3,
+                        keyboardType: TextInputType.multiline,
+                        maxLines: null,
+                        decoration: InputDecoration(
+                          hintText: "Voeg opmerking toe...",
+                          isDense: true,
+                          contentPadding: const EdgeInsets.only(
+                              left: 10, right: 10, top: 10, bottom: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            comment = value;
+                          });
+                        },
+                      ))),
                   OutlinedButton(
                     child: Text("Opslaan"),
-                    onPressed: comment == null ? null : () {
-                      addComment();
-                    },
+                    onPressed: comment == null
+                        ? null
+                        : () {
+                            addComment();
+                          },
                   ),
                   const SizedBox(height: 20)
                 ],
