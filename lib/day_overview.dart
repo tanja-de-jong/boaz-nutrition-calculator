@@ -34,7 +34,7 @@ class _DayOverviewState extends State<DayOverview> {
     setState(() {
       selectedFood = Store.activeFoodItems[0];
       selectedPortion =
-          selectedFood?.portions.firstWhere((Portion p) => p.isDefault);
+          selectedFood?.portions.firstWhere((Portion p) => p.isDefault, orElse: () => selectedFood!.portions.first);
       quantityEaten = selectedPortion!.defaultAmount;
       mealItems = Store.mealItems;
       kcalEatenToday = Store.kcalEatenToday;

@@ -267,14 +267,12 @@ class _FoodSettingsState extends State<FoodSettings> {
       super.dispose();
     }
 
-    initState() {
-      kcalController.text = kcal == null ? "" : kcal.toString();
-    }
-
     showDialog(
         context: context,
         builder: (BuildContext context) {
           return StatefulBuilder(builder: (context, setState) {
+            kcalController.text = kcal == null ? "" : kcal.toString();
+
             return SimpleDialog(
                 title: const SelectableText('Eten toevoegen'),
                 children: [

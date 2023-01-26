@@ -139,7 +139,6 @@ class Store {
   }
 
   static Future<void> addComment(DateTime date, String comment) async {
-    print("Add comment");
     await db.collection("days").doc(DateFormat("yyyy-MM-dd").format(date)).set({
       "comment": comment
     });
@@ -170,7 +169,7 @@ class Food {
     name = name;
     kcal = kcal;
     portions = portions;
-    portions.add(Portion("gram", 1, 0, false, false));
+    portions.add(Portion("gram", 1, 1, false, false));
     archived = archived;
   }
 
