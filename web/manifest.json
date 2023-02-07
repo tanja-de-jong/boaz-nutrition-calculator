@@ -3,8 +3,8 @@
     "short_name": "Boaz' Voercalculator",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
+    "background_color": "#hexcode",
+    "theme_color": "#hexcode",
     "description": "Calculator to determine how much of which food Boaz can still eat.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
@@ -20,13 +20,13 @@
             "type": "image/png"
         },
         {
-            "src": "icons/Icon-192.png",
+            "src": "icons/Icon-maskable-192.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
-            "src": "icons/Icon-512.png",
+            "src": "icons/Icon-maskable-512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
