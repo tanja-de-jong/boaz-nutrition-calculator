@@ -26,6 +26,7 @@ class _DayOverviewState extends State<DayOverview> {
   List<Meal> mealItems = [];
   int kcalEatenToday = 0;
   String? comment;
+  TextEditingController quantityController = TextEditingController();
   TextEditingController commentController = TextEditingController();
 
   void loadDataFromDatabase() async {
@@ -38,6 +39,7 @@ class _DayOverviewState extends State<DayOverview> {
       quantityEaten = selectedPortion!.defaultAmount;
       mealItems = Store.mealItems;
       kcalEatenToday = Store.kcalEatenToday;
+      quantityController.text = selectedPortion?.defaultAmount.toString() ?? "1";
       comment = Store.comment;
       commentController.text = comment ?? "";
       loading = false;
@@ -92,7 +94,8 @@ class _DayOverviewState extends State<DayOverview> {
                         icon: const Icon(Icons.add),
                         label: Text(
                           "${i.portion.defaultAmount} ${i.portion.unit} ${i.food.name}",
-                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                          overflow: TextOverflow.fade,
                         )))))
             .toList());
     Widget foodLabel = const SelectableText('Eten');
@@ -193,7 +196,7 @@ class _DayOverviewState extends State<DayOverview> {
             //Add more decoration as you want here
             //Add label If you want but add hint outside the decoration to be aligned in the button perfectly.
           ),
-          initialValue: selectedPortion?.defaultAmount.toString(),
+          controller: quantityController,
           keyboardType: const TextInputType.numberWithOptions(
               decimal: true, signed: false),
           inputFormatters: [
@@ -254,10 +257,14 @@ class _DayOverviewState extends State<DayOverview> {
           icon: const Icon(Icons.add),
           label: Text("${getKcal()} kcal"),
           onPressed: selectedFood != null && selectedPortion != null
-              ? () => addMeal(selectedFood!, selectedPortion!, quantityEaten)
-                  .then((value) => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Eten succesvol toegevoegd."))))
+              ? () {
+            quantityController.text = selectedPortion?.defaultAmount.toString() ?? "1";
+            addMeal(selectedFood!, selectedPortion!, quantityEaten)
+                .then((value) =>
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text("Eten succesvol toegevoegd."))));
+          }
               : null,
         ));
 
@@ -441,10 +448,12 @@ class _DayOverviewState extends State<DayOverview> {
                           children: [
                             SizedBox(
                                 width: MediaQuery.of(context).size.width - 120,
-                                child: Text(
-                                  "${meal.quantity} ${meal.unit} ${meal.foodName} (${meal.kcal} kcal)",
+                                child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [Flexible(child: Text(
+                                  "${meal.quantity} ${meal.unit} ${meal.foodName}",
                                   overflow: TextOverflow.ellipsis,
                                 )),
+                                Text(" (${meal.kcal} kcal)"), SizedBox(width: 10)])),
+
                             Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
@@ -554,6 +563,11 @@ class _DayOverviewState extends State<DayOverview> {
                       padding: const EdgeInsets.only(left: 25, right: 25),
                       child: SelectableText(
                           'Hoeveelheid: ${meal.quantity} ${meal.unit}')),
+                  const SizedBox(height: 10),
+                  Container(
+                      padding: const EdgeInsets.only(left: 25, right: 25),
+                      child: SelectableText(
+                          'Kcal: ${meal.kcal} kcal')),
                   const SizedBox(height: 10),
                   Container(
                       padding: const EdgeInsets.only(left: 25, right: 25),
