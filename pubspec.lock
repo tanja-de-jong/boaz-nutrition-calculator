@@ -461,6 +461,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.16"
+  text_helpers:
+    dependency: "direct main"
+    description:
+      name: text_helpers
+      sha256: "948479d96c8c2edca7b5ee01376cf9ce07d48a8fb4ef92fd2cb72c255024b9f3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2+1"
   typed_data:
     dependency: transitive
     description:

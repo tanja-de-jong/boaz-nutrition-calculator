@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:text_helpers/text_helpers.dart';
 
 import 'food_settings.dart';
 
@@ -92,10 +93,10 @@ class _DayOverviewState extends State<DayOverview> {
                                           Text("Eten succesvol toegevoegd."))));
                         },
                         icon: const Icon(Icons.add),
-                        label: Text(
+                        label: InlineText(
                           "${i.portion.defaultAmount} ${i.portion.unit} ${i.food.name}",
-                          softWrap: false,
-                          overflow: TextOverflow.fade,
+                          // softWrap: false,
+                          // overflow: TextOverflow.fade,
                         )))))
             .toList());
     Widget foodLabel = const SelectableText('Eten');
