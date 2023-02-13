@@ -259,7 +259,8 @@ class _DayOverviewState extends State<DayOverview> {
           label: Text("${getKcal()} kcal"),
           onPressed: selectedFood != null && selectedPortion != null
               ? () {
-            quantityController.text = selectedPortion?.defaultAmount.toString() ?? "1";
+            quantityEaten = selectedPortion?.defaultAmount ?? 1;
+            quantityController.text = quantityEaten.toString();
             addMeal(selectedFood!, selectedPortion!, quantityEaten)
                 .then((value) =>
                 ScaffoldMessenger.of(context).showSnackBar(
