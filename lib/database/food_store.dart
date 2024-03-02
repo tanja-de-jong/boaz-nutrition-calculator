@@ -18,8 +18,10 @@ class Store {
   }
 
   static Future<void> loadSettings() async {
-    DocumentSnapshot<Map<String, dynamic>> doc = await db.collection("settings").doc("settings").get();
-    if (doc.data() != null && doc.data()!.containsKey("kcalAllowed")) kcalAllowed = doc.data()!["kcalAllowed"];
+    DocumentSnapshot<Map<String, dynamic>> doc =
+        await db.collection("settings").doc("settings").get();
+    if (doc.data() != null && doc.data()!.containsKey("kcalAllowed"))
+      kcalAllowed = doc.data()!["kcalAllowed"];
   }
 
   static Future<void> loadFood() async {
@@ -40,13 +42,11 @@ class Store {
   }
 
   static Future<void> loadMealsAndCommentForDate(DateTime date) async {
-    DocumentReference<Map<String, dynamic>> dateDoc = db.collection("days").doc(DateFormat("yyyy-MM-dd").format(date));
+    DocumentReference<Map<String, dynamic>> dateDoc =
+        db.collection("days").doc(DateFormat("yyyy-MM-dd").format(date));
     comment = (await dateDoc.get()).data()?["comment"];
 
-    var mealDocs = (await dateDoc
-            .collection("meals")
-            .get())
-        .docs;
+    var mealDocs = (await dateDoc.collection("meals").get()).docs;
 
     mealItems = [];
     kcalEatenToday = 0;
@@ -58,8 +58,8 @@ class Store {
     }
   }
 
-  static Future<void> addFood(
-      String? id, String name, int kcal, String url, List<Portion> portions) async {
+  static Future<void> addFood(String? id, String name, int kcal, String url,
+      List<Portion> portions) async {
     if (id != null) {
       await db.collection("food").doc(id).set({
         "name": name,
@@ -94,12 +94,7 @@ class Store {
   }
 
   static Future<void> archiveFood(Food food, bool archive) async {
-    await db
-        .collection("food")
-        .doc(food.id)
-        .update({
-      "archived": archive
-    });
+    await db.collection("food").doc(food.id).update({"archived": archive});
 
     food.archived = archive;
   }
@@ -139,15 +134,14 @@ class Store {
   }
 
   static Future<void> addComment(DateTime date, String comment) async {
-    await db.collection("days").doc(DateFormat("yyyy-MM-dd").format(date)).set({
-      "comment": comment
-    });
+    await db
+        .collection("days")
+        .doc(DateFormat("yyyy-MM-dd").format(date))
+        .set({"comment": comment});
   }
 
   static Future<void> updateKcalAllowed(int kcal) async {
-    await db.collection("settings").doc("settings").set({
-      "kcalAllowed": kcal
-    });
+    await db.collection("settings").doc("settings").set({"kcalAllowed": kcal});
     Store.kcalAllowed = kcal;
   }
 
@@ -164,7 +158,8 @@ class Food {
   bool archived = false;
   String url;
 
-  Food(this.id, this.name, this.kcal, this.portions, { this.archived = false, this.url = "" }) {
+  Food(this.id, this.name, this.kcal, this.portions,
+      {this.archived = false, this.url = ""}) {
     id = id;
     name = name;
     kcal = kcal;
@@ -180,7 +175,8 @@ class Food {
         portionsList.add(Portion.create(p));
       }
     }
-    return Food(id, data["name"] ?? "", data["kcal"] ?? 0, portionsList, archived: data["archived"] ?? false, url: data["url"] ?? "");
+    return Food(id, data["name"] ?? "", data["kcal"] ?? 0, portionsList,
+        archived: data["archived"] ?? false, url: data["url"] ?? "");
   }
 }
 

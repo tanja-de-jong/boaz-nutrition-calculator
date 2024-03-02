@@ -1,27 +1,29 @@
-import 'package:boaz_nutrition_calculator/sign_in.dart';
+import 'package:boaz_nutrition_calculator/authentication/sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class Authentication {
-
   static String? error;
-  static List<String> allowedEmails = ["tanja@tanjadejong.com", "mattanjav@gmail.com", "samen@tanjadejong.com"];
+  static List<String> allowedEmails = [
+    "tanja@tanjadejong.com",
+    "mattanjav@gmail.com",
+    "samen@tanjadejong.com"
+  ];
 
-  static Future<String?> signInWithGoogle({required BuildContext context}) async {
+  static Future<String?> signInWithGoogle(
+      {required BuildContext context}) async {
     FirebaseAuth auth = FirebaseAuth.instance;
     User? user;
 
     if (kIsWeb) {
       GoogleAuthProvider authProvider = GoogleAuthProvider();
-      authProvider.setCustomParameters({
-        'prompt': 'select_account'
-      });
+      authProvider.setCustomParameters({'prompt': 'select_account'});
 
       try {
         final UserCredential userCredential =
-        await auth.signInWithPopup(authProvider);
+            await auth.signInWithPopup(authProvider);
         user = userCredential.user;
         if (!allowedEmails.contains(user?.email!.toLowerCase())) {
           error = "Gebruiker heeft geen toegang tot deze app.";
@@ -36,11 +38,11 @@ class Authentication {
       final GoogleSignIn googleSignIn = GoogleSignIn();
 
       final GoogleSignInAccount? googleSignInAccount =
-      await googleSignIn.signIn();
+          await googleSignIn.signIn();
 
       if (googleSignInAccount != null) {
         final GoogleSignInAuthentication googleSignInAuthentication =
-        await googleSignInAccount.authentication;
+            await googleSignInAccount.authentication;
 
         final AuthCredential credential = GoogleAuthProvider.credential(
           accessToken: googleSignInAuthentication.accessToken,
@@ -49,7 +51,7 @@ class Authentication {
 
         try {
           final UserCredential userCredential =
-          await auth.signInWithCredential(credential);
+              await auth.signInWithCredential(credential);
 
           user = userCredential.user;
           if (!allowedEmails.contains(user?.email!.toLowerCase())) {
@@ -95,20 +97,20 @@ class Authentication {
       backgroundColor: Colors.black,
       content: SelectableText(
         content,
-        style: TextStyle(color: Colors.redAccent, letterSpacing: 0.5),
+        style: const TextStyle(color: Colors.redAccent, letterSpacing: 0.5),
       ),
     );
   }
 
   static Future<UserOrErrorMessage> signInWithUsernameAndPassword(
       {required BuildContext context,
-        required String username,
-        required String password}) async {
+      required String username,
+      required String password}) async {
     UserOrErrorMessage result = UserOrErrorMessage();
 
     try {
       final UserCredential userCredential =
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: username.toLowerCase(),
         password: password,
       );
@@ -117,11 +119,14 @@ class Authentication {
       // await TODO: Store.initializeStore(username);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        result = UserOrErrorMessage(errorMessage: 'Gebruikersnaam niet gevonden.');
+        result =
+            UserOrErrorMessage(errorMessage: 'Gebruikersnaam niet gevonden.');
       } else if (e.code == 'wrong-password') {
         result = UserOrErrorMessage(errorMessage: 'Wachtwoord is incorrect.');
       } else {
-        result = UserOrErrorMessage(errorMessage: 'Er is een probleem opgetreden bij het inloggen. Controleer je gebruikersnaam en wachtwoord.');
+        result = UserOrErrorMessage(
+            errorMessage:
+                'Er is een probleem opgetreden bij het inloggen. Controleer je gebruikersnaam en wachtwoord.');
       }
     }
 
@@ -130,30 +135,32 @@ class Authentication {
 
   static Future<UserOrErrorMessage> registerUserWithEmailAndPassword(
       {required BuildContext context,
-        required String username,
-        required String password}) async {
+      required String username,
+      required String password}) async {
     // bool userAllowed = await FirestoreHandler.userAllowed(username);
     UserOrErrorMessage result = UserOrErrorMessage();
 
     // if (userAllowed) {
-      try {
-        final UserCredential userCredential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(
-            email: username.toLowerCase(), password: password);
-        result = UserOrErrorMessage(user: userCredential.user);
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'email-already-in-use') {
-          result = UserOrErrorMessage(errorMessage: 'Account bestaat al.');
-        } else if (e.code == 'invalid-email') {
-          result = UserOrErrorMessage(errorMessage: 'Het opgegeven e-mailadres is niet geldig.');
-        } else if (e.code == 'weak-password') {
-          result = UserOrErrorMessage(errorMessage: 'Het opgegeven wachtwoord is te zwak.');
-        } else {
-          result = UserOrErrorMessage(errorMessage: e.code);
-        }
-      } catch (e) {
-        print(e);
+    try {
+      final UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+              email: username.toLowerCase(), password: password);
+      result = UserOrErrorMessage(user: userCredential.user);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        result = UserOrErrorMessage(errorMessage: 'Account bestaat al.');
+      } else if (e.code == 'invalid-email') {
+        result = UserOrErrorMessage(
+            errorMessage: 'Het opgegeven e-mailadres is niet geldig.');
+      } else if (e.code == 'weak-password') {
+        result = UserOrErrorMessage(
+            errorMessage: 'Het opgegeven wachtwoord is te zwak.');
+      } else {
+        result = UserOrErrorMessage(errorMessage: e.code);
       }
+    } catch (e) {
+      print(e);
+    }
     // } else {
     //   result = UserOrErrorMessage(errorMessage: 'Voor dit e-mailadres kan geen account worden gemaakt.');
     // }
@@ -165,7 +172,8 @@ class Authentication {
     print("Password reset email sent");
     var error = '';
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email.toLowerCase());
+      await FirebaseAuth.instance
+          .sendPasswordResetEmail(email: email.toLowerCase());
     } on FirebaseAuthException catch (e) {
       if (e.code == 'invalid-email') {
         error = "E-mailadres is ongeldig.";
@@ -183,9 +191,7 @@ class Authentication {
   static Future<void> logOut({required BuildContext context}) async {
     await FirebaseAuth.instance.signOut();
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-          builder: (context) => SignInScreen()
-      ),
+      MaterialPageRoute(builder: (context) => const SignInScreen()),
     );
   }
 
@@ -197,34 +203,39 @@ class Authentication {
     showDialog(
         context: context,
         builder: (BuildContext context) {
-          return SimpleDialog(title: SelectableText('Account verwijderen'), children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(
-                  padding: EdgeInsets.only(left: 25, right: 25),
-                  child: SelectableText(
-                      'Weet je zeker dat je je account wilt verwijderen?')),
-              SizedBox(height: 20),
-              Center(child: Wrap(spacing: 10, children: [
-                OutlinedButton(
-                    onPressed: () {
-                      Authentication.deleteUser();
-                      Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute<void>(
-                              builder: (BuildContext context) => SignInScreen()),
+          return SimpleDialog(
+              title: const SelectableText('Account verwijderen'),
+              children: [
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                      padding: const EdgeInsets.only(left: 25, right: 25),
+                      child: const SelectableText(
+                          'Weet je zeker dat je je account wilt verwijderen?')),
+                  const SizedBox(height: 20),
+                  Center(
+                      child: Wrap(spacing: 10, children: [
+                    OutlinedButton(
+                        onPressed: () {
+                          Authentication.deleteUser();
+                          Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute<void>(
+                                  builder: (BuildContext context) =>
+                                      const SignInScreen()),
                               (Route<dynamic> route) => false);
-                    },
-                    child: Text('Verwijder')),
-                ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text('Annuleer')),
-              ]))
-            ])
-          ]);
+                        },
+                        child: const Text('Verwijder')),
+                    ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Annuleer')),
+                  ]))
+                ])
+              ]);
         });
   }
 }
+
 class UserOrErrorMessage {
   User? user;
   String? errorMessage;

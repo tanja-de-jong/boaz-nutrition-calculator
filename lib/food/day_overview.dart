@@ -1,7 +1,6 @@
 import 'dart:math';
 
-import 'package:boaz_nutrition_calculator/authentication.dart';
-import 'package:boaz_nutrition_calculator/store.dart';
+import 'package:boaz_nutrition_calculator/database/food_store.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,12 +34,14 @@ class _DayOverviewState extends State<DayOverview> {
 
     setState(() {
       selectedFood = Store.activeFoodItems[0];
-      selectedPortion =
-          selectedFood?.portions.firstWhere((Portion p) => p.isDefault, orElse: () => selectedFood!.portions.last);
+      selectedPortion = selectedFood?.portions.firstWhere(
+          (Portion p) => p.isDefault,
+          orElse: () => selectedFood!.portions.last);
       quantityEaten = selectedPortion!.defaultAmount;
       mealItems = Store.mealItems;
       kcalEatenToday = Store.kcalEatenToday;
-      quantityController.text = selectedPortion?.defaultAmount.toString() ?? "1";
+      quantityController.text =
+          selectedPortion?.defaultAmount.toString() ?? "1";
       comment = Store.comment;
       commentController.text = comment ?? "";
       loading = false;
@@ -53,8 +54,9 @@ class _DayOverviewState extends State<DayOverview> {
     int year = selectedDate.year;
 
     final now = DateTime.now();
-    if (now.day == day && now.month == month && now.year == year)
+    if (now.day == day && now.month == month && now.year == year) {
       return "Vandaag";
+    }
 
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
     if (yesterday.day == day &&
@@ -125,7 +127,7 @@ class _DayOverviewState extends State<DayOverview> {
             //Add isDense true and zero Padding.
             //Add Horizontal padding using buttonPadding and Vertical padding by increasing buttonHeight instead of add Padding here so that The whole TextField Button become clickable, and also the dropdown menu open under The whole TextField Button.
             isDense: true,
-            contentPadding: EdgeInsets.only(left: 15, right: 15),
+            contentPadding: const EdgeInsets.only(left: 15, right: 15),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -259,14 +261,13 @@ class _DayOverviewState extends State<DayOverview> {
           label: Text("${getKcal()} kcal"),
           onPressed: selectedFood != null && selectedPortion != null
               ? () {
-            quantityEaten = selectedPortion?.defaultAmount ?? 1;
-            quantityController.text = quantityEaten.toString();
-            addMeal(selectedFood!, selectedPortion!, quantityEaten)
-                .then((value) =>
-                ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text("Eten succesvol toegevoegd."))));
-          }
+                  quantityEaten = selectedPortion?.defaultAmount ?? 1;
+                  quantityController.text = quantityEaten.toString();
+                  addMeal(selectedFood!, selectedPortion!, quantityEaten).then(
+                      (value) => ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text("Eten succesvol toegevoegd."))));
+                }
               : null,
         ));
 
@@ -360,10 +361,10 @@ class _DayOverviewState extends State<DayOverview> {
         appBar: AppBar(
             // Here we take the value from the MyHomePage object that was created by
             // the App.build method, and use it to set our appbar title.
-            title: Text("Voercalculator"),
+            title: const Text("Voercalculator"),
             actions: <Widget>[
               Padding(
-                  padding: EdgeInsets.only(right: 20.0),
+                  padding: const EdgeInsets.only(right: 20.0),
                   child: GestureDetector(
                     onTap: () {
                       Navigator.of(context).push(
@@ -371,7 +372,7 @@ class _DayOverviewState extends State<DayOverview> {
                             builder: (context) => const FoodSettings()),
                       );
                     },
-                    child: Icon(
+                    child: const Icon(
                       Icons.settings,
                       size: 26.0,
                     ),
@@ -388,7 +389,7 @@ class _DayOverviewState extends State<DayOverview> {
                       children: [
                         SizedBox(
                             width: MediaQuery.of(context).size.width >= 500
-                                ? 100
+                                ? 110
                                 : 50,
                             child: TextButton.icon(
                                 onPressed: () {
@@ -430,7 +431,7 @@ class _DayOverviewState extends State<DayOverview> {
                         padding: const EdgeInsets.only(left: 15, right: 15),
                         child: Text(
                           comment!,
-                          style: TextStyle(fontStyle: FontStyle.italic),
+                          style: const TextStyle(fontStyle: FontStyle.italic),
                         )),
                   const SizedBox(height: 20),
                   CircularPercentIndicator(
@@ -450,12 +451,17 @@ class _DayOverviewState extends State<DayOverview> {
                           children: [
                             SizedBox(
                                 width: MediaQuery.of(context).size.width - 120,
-                                child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [Flexible(child: Text(
-                                  "${meal.quantity} ${meal.unit} ${meal.foodName}",
-                                  overflow: TextOverflow.ellipsis,
-                                )),
-                                Text(" (${meal.kcal} kcal)"), SizedBox(width: 10)])),
-
+                                child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      Flexible(
+                                          child: Text(
+                                        "${meal.quantity} ${meal.unit} ${meal.foodName}",
+                                        overflow: TextOverflow.ellipsis,
+                                      )),
+                                      Text(" (${meal.kcal} kcal)"),
+                                      const SizedBox(width: 10)
+                                    ])),
                             Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
@@ -505,12 +511,12 @@ class _DayOverviewState extends State<DayOverview> {
                         },
                       ))),
                   OutlinedButton(
-                    child: Text("Opslaan"),
                     onPressed: comment == null
                         ? null
                         : () {
                             addComment();
                           },
+                    child: const Text("Opslaan"),
                   ),
                   const SizedBox(height: 20)
                 ],
@@ -568,8 +574,7 @@ class _DayOverviewState extends State<DayOverview> {
                   const SizedBox(height: 10),
                   Container(
                       padding: const EdgeInsets.only(left: 25, right: 25),
-                      child: SelectableText(
-                          'Kcal: ${meal.kcal} kcal')),
+                      child: SelectableText('Kcal: ${meal.kcal} kcal')),
                   const SizedBox(height: 10),
                   Container(
                       padding: const EdgeInsets.only(left: 25, right: 25),

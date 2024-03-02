@@ -1,13 +1,12 @@
-import 'dart:math';
-
-import 'package:boaz_nutrition_calculator/day_overview.dart';
-import 'package:boaz_nutrition_calculator/sign_in.dart';
+import 'package:boaz_nutrition_calculator/dashboard.dart';
+import 'package:boaz_nutrition_calculator/food/day_overview.dart';
+import 'package:boaz_nutrition_calculator/authentication/sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'authentication.dart';
-import 'firebase_options.dart'; // generated via `flutterfire` CLI
+import 'authentication/authentication.dart';
+import 'database/firebase_options.dart'; // generated via `flutterfire` CLI
 import 'package:flutter/material.dart';
 
 Future<void> main() async {
@@ -74,29 +73,19 @@ class _MyHomePageState extends State<MyHomePage> {
             case ConnectionState.active:
               final firebaseUser = snapshot.data;
               if (firebaseUser == null) {
-                return SizedBox(height: 30, width: 100, child: SignInScreen());
-                  // Expanded(child: SignInButton(
-                  //   Buttons.Google,
-                  //   text: "Log in met Google",
-                  //   onPressed: () =>
-                  //       Authentication.signInWithGoogle(context: context),
-                  // ));
+                return const SizedBox(
+                    height: 30, width: 100, child: SignInScreen());
               }
-              return DayOverview();
+              return const Dashboard();
             default:
               return Container(
-                  constraints: BoxConstraints(maxWidth: 1000),
+                  constraints: const BoxConstraints(maxWidth: 1000),
                   child: Center(
                     child: ElevatedButton(
                         onPressed: () =>
                             Authentication.signInWithGoogle(context: context),
-                        child: Text("Inloggen met Google")),
+                        child: const Text("Inloggen met Google")),
                   ));
-            //   Center(child: CircularProgressIndicator(
-            //     valueColor: AlwaysStoppedAnimation<Color>(
-            //       Colors.pink,
-            //     )),
-            // );
           }
         });
   }

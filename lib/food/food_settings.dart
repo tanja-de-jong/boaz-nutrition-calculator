@@ -1,6 +1,4 @@
-import 'package:boaz_nutrition_calculator/main.dart';
-import 'package:boaz_nutrition_calculator/store.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:boaz_nutrition_calculator/database/food_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -44,32 +42,33 @@ class _FoodSettingsState extends State<FoodSettings> {
     });
   }
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-            // Here we take the value from the MyHomePage object that was created by
-            // the App.build method, and use it to set our appbar title.
-            title: const Text("Instellingen"),
-            // actions: <Widget>[
-            //   Padding(
-            //       padding: EdgeInsets.only(right: 20.0),
-            //       child: GestureDetector(
-            //         onTap: () {
-            //           Navigator.of(context).pushReplacement(
-            //             MaterialPageRoute(
-            //                 builder: (context) => const MyHomePage(
-            //                     title: 'Boaz\' Voercalculator')),
-            //           );
-            //         },
-            //         child: Icon(
-            //           Icons.close,
-            //           size: 26.0,
-            //         ),
-            //       )),
-            // ]
-            ),
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: const Text("Instellingen"),
+          // actions: <Widget>[
+          //   Padding(
+          //       padding: EdgeInsets.only(right: 20.0),
+          //       child: GestureDetector(
+          //         onTap: () {
+          //           Navigator.of(context).pushReplacement(
+          //             MaterialPageRoute(
+          //                 builder: (context) => const MyHomePage(
+          //                     title: 'Boaz\' Voercalculator')),
+          //           );
+          //         },
+          //         child: Icon(
+          //           Icons.close,
+          //           size: 26.0,
+          //         ),
+          //       )),
+          // ]
+        ),
         body: SingleChildScrollView(
-            padding: EdgeInsets.all(15),
+            padding: const EdgeInsets.all(15),
             child: Column(children: [
               getRow(
                   "Toegestane aantal kcal",
@@ -86,15 +85,15 @@ class _FoodSettingsState extends State<FoodSettings> {
                     )),
                     Expanded(
                         child: IconButton(
-                      icon: Icon(Icons.check),
+                      icon: const Icon(Icons.check),
                       onPressed: () {
                         updateKcalAllowed(kcalAllowed);
                       },
                     ))
                   ])),
-              SizedBox(height: 10),
-              Divider(),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
+              const Divider(),
+              const SizedBox(height: 10),
               SizedBox(
                   height: 30,
                   child: TextField(
@@ -115,7 +114,7 @@ class _FoodSettingsState extends State<FoodSettings> {
                     ),
                     onChanged: filterItems,
                   )),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               ...foodItems
                   .where((f) => !f.archived)
                   .map((item) => Row(
@@ -203,7 +202,7 @@ class _FoodSettingsState extends State<FoodSettings> {
   Row getRow(String label, Widget value) {
     return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
       Expanded(child: Text(label)),
-      SizedBox(width: 10),
+      const SizedBox(width: 10),
       Expanded(child: value)
     ]);
   }
@@ -285,9 +284,10 @@ class _FoodSettingsState extends State<FoodSettings> {
                                 "Naam",
                                 TextFormField(
                                     initialValue: name,
-                                    decoration: InputDecoration(isDense: true),
+                                    decoration:
+                                        const InputDecoration(isDense: true),
                                     onChanged: (value) =>
-                                        setState(() => {name = value}))),
+                                        setState(() => name = value))),
                             const SizedBox(height: 10),
                             getRow(
                                 "Kcal per kg",
@@ -295,9 +295,10 @@ class _FoodSettingsState extends State<FoodSettings> {
                                   Expanded(
                                       child: TextField(
                                     controller: kcalController,
-                                    decoration: InputDecoration(isDense: true),
-                                    onChanged: (value) => setState(
-                                        () => {kcal = int.parse(value)}),
+                                    decoration:
+                                        const InputDecoration(isDense: true),
+                                    onChanged: (value) =>
+                                        setState(() => kcal = int.parse(value)),
                                     keyboardType: TextInputType.number,
                                     inputFormatters: [
                                       FilteringTextInputFormatter.digitsOnly
@@ -412,9 +413,10 @@ class _FoodSettingsState extends State<FoodSettings> {
                                 "Url",
                                 TextFormField(
                                     initialValue: url,
-                                    decoration: InputDecoration(isDense: true),
+                                    decoration:
+                                        const InputDecoration(isDense: true),
                                     onChanged: (value) =>
-                                        setState(() => {url = value}))),
+                                        setState(() => url = value))),
                             const SizedBox(height: 10),
                             const Text(
                               "Porties",
@@ -441,7 +443,7 @@ class _FoodSettingsState extends State<FoodSettings> {
                                           splashRadius: 13,
                                         )
                                     ])),
-                            SizedBox(
+                            const SizedBox(
                               height: 10,
                             ),
                             if (!expandNewPortion)
@@ -463,18 +465,18 @@ class _FoodSettingsState extends State<FoodSettings> {
                                       "Eenheid",
                                       TextFormField(
                                         initialValue: unit,
-                                        decoration:
-                                            InputDecoration(isDense: true),
+                                        decoration: const InputDecoration(
+                                            isDense: true),
                                         onChanged: (value) =>
-                                            setState(() => {unit = value}),
+                                            setState(() => unit = value),
                                       )),
                                   const SizedBox(height: 5),
                                   getRow(
                                       "Aantal gram",
                                       TextFormField(
                                           initialValue: grams,
-                                          decoration:
-                                              InputDecoration(isDense: true),
+                                          decoration: const InputDecoration(
+                                              isDense: true),
                                           keyboardType: TextInputType.number,
                                           inputFormatters: [
                                             FilteringTextInputFormatter
@@ -488,10 +490,10 @@ class _FoodSettingsState extends State<FoodSettings> {
                                       "Standaardhoeveelheid",
                                       TextFormField(
                                           initialValue: defaultAmount,
-                                          decoration:
-                                              InputDecoration(isDense: true),
+                                          decoration: const InputDecoration(
+                                              isDense: true),
                                           keyboardType: const TextInputType
-                                                  .numberWithOptions(
+                                              .numberWithOptions(
                                               decimal: true, signed: false),
                                           inputFormatters: [
                                             FilteringTextInputFormatter.allow(
@@ -500,8 +502,9 @@ class _FoodSettingsState extends State<FoodSettings> {
                                                 (oldValue, newValue) {
                                               try {
                                                 final text = newValue.text;
-                                                if (text.isNotEmpty)
+                                                if (text.isNotEmpty) {
                                                   double.parse(text);
+                                                }
                                                 return newValue;
                                               } catch (e) {}
                                               return oldValue;
@@ -509,7 +512,7 @@ class _FoodSettingsState extends State<FoodSettings> {
                                           ],
                                           onChanged: (value) {
                                             setState(
-                                                () => {defaultAmount = value});
+                                                () => defaultAmount = value);
                                           })),
                                   const SizedBox(height: 5),
                                   getRow(
@@ -517,13 +520,16 @@ class _FoodSettingsState extends State<FoodSettings> {
                                       SizedBox(
                                           height: 30,
                                           child: ToggleButtons(
-                                            children: [Text("Ja"), Text("Nee")],
                                             isSelected: [isDefault, !isDefault],
                                             onPressed: (int index) {
                                               setState(() {
                                                 isDefault = index == 0;
                                               });
                                             },
+                                            children: const [
+                                              Text("Ja"),
+                                              Text("Nee")
+                                            ],
                                           ))),
                                   const SizedBox(height: 5),
                                   getRow(
@@ -531,13 +537,16 @@ class _FoodSettingsState extends State<FoodSettings> {
                                       SizedBox(
                                           height: 30,
                                           child: ToggleButtons(
-                                            children: [Text("Ja"), Text("Nee")],
                                             isSelected: [quickAdd, !quickAdd],
                                             onPressed: (int index) {
                                               setState(() {
                                                 quickAdd = index == 0;
                                               });
                                             },
+                                            children: const [
+                                              Text("Ja"),
+                                              Text("Nee")
+                                            ],
                                           ))),
                                   const SizedBox(height: 10),
                                   OutlinedButton(
